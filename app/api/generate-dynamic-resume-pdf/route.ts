@@ -85,8 +85,8 @@ export async function POST(req: NextRequest) {
 
     // 2. Load base resume based on selected profile, fallback to default embedded
     const profile = await getBaseResumeByName(baseResumeProfile);
-    const baseResume: string = profile?.resumeText || ``;
-    const customPrompt = profile?.customPrompt;
+    // const baseResume: string = profile?.resumeText || ``;
+    // const customPrompt = profile?.customPrompt;
     const pdfTemplate = profile?.pdfTemplate || 1;
 
     // // 3. Tailor resume with OpenAI
