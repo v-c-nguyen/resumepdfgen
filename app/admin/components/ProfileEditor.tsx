@@ -7,17 +7,10 @@ interface ProfileEditorProps {
   onUpdate: () => void;
 }
 
-// PDF Template options
-const PDF_TEMPLATES = [
-  { value: 1, label: 'Template1' },
-  { value: 2, label: 'Template2' },
-  { value: 3, label: 'Template3' },
-  { value: 4, label: 'Template4' },
-  // { value: 5, label: 'Template5' },
-  // { value: 6, label: 'Template6' },
-  // { value: 7, label: 'Template7' },
-  // { value: 8, label: 'Template8' },
-];
+interface TemplateOption {
+  value: number;
+  label: string;
+}
 
 export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps) {
   const [selectedProfileName, setSelectedProfileName] = useState<string | null>(null);
@@ -27,6 +20,8 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [pdfTemplates, setPdfTemplates] = useState<TemplateOption[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
 
   // Default prompt template
   const defaultPromptTemplate = `
@@ -63,6 +58,40 @@ Base resume: \${baseResume}
 Job description: \${jobDescription}
   `.trim();
 
+  // Fetch templates on component mount
+  useEffect(() => {
+    async function fetchTemplates() {
+      try {
+        const response = await fetch('/api/admin/templates');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.templates && Array.isArray(data.templates)) {
+            setPdfTemplates(data.templates);
+          }
+        } else {
+          console.error('Failed to fetch templates:', response.statusText);
+          // Fallback to default templates if API fails
+          setPdfTemplates([
+            { value: 2, label: 'Template2' },
+            { value: 3, label: 'Template3' },
+            { value: 4, label: 'Template4' },
+          ]);
+        }
+      } catch (err) {
+        console.error('Error fetching templates:', err);
+        // Fallback to default templates if API fails
+        setPdfTemplates([
+          { value: 2, label: 'Template2' },
+          { value: 3, label: 'Template3' },
+          { value: 4, label: 'Template4' },
+        ]);
+      } finally {
+        setTemplatesLoading(false);
+      }
+    }
+    fetchTemplates();
+  }, []);
+
   useEffect(() => {
     if (profiles.length > 0 && !selectedProfileName) {
       setSelectedProfileName(profiles[0].name);
@@ -76,7 +105,7 @@ Job description: \${jobDescription}
       name: '',
       resumeText: '',
       customPrompt: undefined,
-      pdfTemplate: 1
+      pdfTemplate: pdfTemplates.length > 0 ? pdfTemplates[0].value : 1
     });
     setIsCreating(true);
     setError('');
@@ -110,14 +139,14 @@ Job description: \${jobDescription}
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
             customPrompt: editingProfile.customPrompt || undefined,
-            pdfTemplate: editingProfile.pdfTemplate || 1
+            pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)
           }
         : {
             oldName: profiles.find(p => p.name === editingProfile.name)?.name || editingProfile.name,
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
             customPrompt: editingProfile.customPrompt || undefined,
-            pdfTemplate: editingProfile.pdfTemplate || 1
+            pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)
           };
 
       const response = await fetch(url, {
@@ -249,15 +278,22 @@ Job description: \${jobDescription}
                 Select PDF Template
               </label>
               <select
-                value={editingProfile.pdfTemplate || 1}
+                value={editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)}
                 onChange={(e) => setEditingProfile({ ...editingProfile, pdfTemplate: Number(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                disabled={templatesLoading}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
-                {PDF_TEMPLATES.map((template) => (
-                  <option key={template.value} value={template.value}>
-                    {template.label}
-                  </option>
-                ))}
+                {templatesLoading ? (
+                  <option value="">Loading templates...</option>
+                ) : pdfTemplates.length > 0 ? (
+                  pdfTemplates.map((template) => (
+                    <option key={template.value} value={template.value}>
+                      {template.label}
+                    </option>
+                  ))
+                ) : (
+                  <option value={1}>Template1 (default)</option>
+                )}
               </select>
               <p className="mt-2 text-xs text-gray-500">
                 Choose the PDF template style for this profile
@@ -375,7 +411,7 @@ Job description: \${jobDescription}
                     {profile.customPrompt && (
                       <p className="text-blue-600">✓ Custom prompt configured</p>
                     )}
-                    <p>PDF Template: {PDF_TEMPLATES.find(t => t.value === (profile.pdfTemplate || 1))?.label || "Template1"}</p>
+                    <p>PDF Template: {pdfTemplates.find(t => t.value === (profile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)))?.label || `Template${profile.pdfTemplate || 1}`}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">

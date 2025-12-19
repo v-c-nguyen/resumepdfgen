@@ -62,13 +62,13 @@ function renderBodyContentTemplate4(
         context.page.drawText(sectionLine, { 
           x: left, 
           y, 
-          size: sectionHeaderSize, 
+          size: sectionHeaderSize - 2, 
           font: fontBold, 
           color: BLACK 
         });
         
         // Elegant underline
-        const textWidth = fontBold.widthOfTextAtSize(sectionLine, sectionHeaderSize);
+        const textWidth = fontBold.widthOfTextAtSize(sectionLine, sectionHeaderSize - 2);
         context.page.drawLine({
           start: { x: left, y: y - 8 },
           end: { x: left + textWidth, y: y - 8 },
@@ -256,8 +256,8 @@ export async function renderTemplate4(context: TemplateContext): Promise<Uint8Ar
   
   const MARGIN_TOP = 80;
   const MARGIN_BOTTOM = 50;
-  const MARGIN_LEFT = 50;
-  const MARGIN_RIGHT = 50;
+  const MARGIN_LEFT = 40;
+  const MARGIN_RIGHT = 40;
   const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
   
   const NAME_SIZE = 30;
@@ -321,7 +321,7 @@ export async function renderTemplate4(context: TemplateContext): Promise<Uint8Ar
       });
       y -= CONTACT_SIZE * 1.4;
     }
-    y -= 24;
+    y -= 10;
   }
   
   // Elegant divider line

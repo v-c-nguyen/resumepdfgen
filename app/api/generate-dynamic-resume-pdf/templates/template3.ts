@@ -210,7 +210,7 @@ export async function renderTemplate3(context: TemplateContext): Promise<Uint8Ar
   page.drawRectangle({
     x: 0,
     y: 0,
-    width: 12,
+    width: 10,
     height: PAGE_HEIGHT,
     color: INDIGO,
   });
@@ -249,7 +249,7 @@ export async function renderTemplate3(context: TemplateContext): Promise<Uint8Ar
   // Contact info in header (below name)
   const contactParts = [location, phone, email].filter(Boolean);
   if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  •  ');
+    const contactLine = contactParts.join('  |  ');
     const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
     let contactY = PAGE_HEIGHT - 70;
     for (const line of contactLines) {

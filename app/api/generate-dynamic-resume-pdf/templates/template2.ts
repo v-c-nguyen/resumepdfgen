@@ -112,7 +112,7 @@ function renderBodyContentTemplate2(
           color: BURGUNDY 
         });
         
-        y -= boxHeight + 12;
+        y -= boxHeight + 8;
       }
     } else {
       const isJobExperience = / at .+:.+/.test(line);
@@ -455,26 +455,17 @@ export async function renderTemplate2(context: TemplateContext): Promise<Uint8Ar
   const BURGUNDY = rgb(0.5, 0.1, 0.2); // Burgundy/wine red accent color
   const LIGHT_BURGUNDY = rgb(0.98, 0.95, 0.96); // Light burgundy background
   
-  const MARGIN_TOP = 80;
+  const MARGIN_TOP = 50;
   const MARGIN_BOTTOM = 60; // Extra space for bottom border
-  const MARGIN_LEFT = 50;
-  const MARGIN_RIGHT = 50;
+  const MARGIN_LEFT = 40;
+  const MARGIN_RIGHT = 40;
   const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
   
   const NAME_SIZE = 28;
   const CONTACT_SIZE = 9;
   const SECTION_HEADER_SIZE = 13;
   const BODY_SIZE = 9.5;
-  
-  // Draw top border
-  page.drawRectangle({
-    x: 0,
-    y: PAGE_HEIGHT - 15,
-    width: PAGE_WIDTH,
-    height: 15,
-    color: BURGUNDY,
-  });
-  
+
   // Draw bottom border
   page.drawRectangle({
     x: 0,
@@ -504,7 +495,7 @@ export async function renderTemplate2(context: TemplateContext): Promise<Uint8Ar
       });
       y -= NAME_SIZE * 0.85;
     }
-    y -= 12;
+    y -= 8;
   }
   
   // Contact info positioned on the left side (asymmetric)
@@ -522,7 +513,7 @@ export async function renderTemplate2(context: TemplateContext): Promise<Uint8Ar
       });
       y -= CONTACT_SIZE * 1.3;
     }
-    y -= 20;
+    y -= 10;
   }
   
   // Decorative burgundy line separator
