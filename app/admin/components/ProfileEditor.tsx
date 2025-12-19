@@ -13,10 +13,10 @@ const PDF_TEMPLATES = [
   { value: 2, label: 'Template2' },
   { value: 3, label: 'Template3' },
   { value: 4, label: 'Template4' },
-  { value: 5, label: 'Template5' },
-  { value: 6, label: 'Template6' },
-  { value: 7, label: 'Template7' },
-  { value: 8, label: 'Template8' },
+  // { value: 5, label: 'Template5' },
+  // { value: 6, label: 'Template6' },
+  // { value: 7, label: 'Template7' },
+  // { value: 8, label: 'Template8' },
 ];
 
 export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps) {
@@ -34,10 +34,10 @@ You are a technical resume assistant. Align the resume with the Job Description 
 
 CORE REQUIREMENTS:
 1. Keyword Match: Use exact JD technology/tool names. Cross-link skills (e.g., "React with TypeScript") for ATS scoring. Include all JD skills/ecosystems.
-2. Experience Bullets: 8-10 bullets per role (challenge → action → result format). Create new JD-aligned bullets if needed. Emphasize main JD tech stack in recent roles; distribute secondary technologies across earlier positions.
-3. Skills Section: Place after Summary, before Experience. List ALL technologies/tools from JD and candidate experience. Include related ecosystems (REST, GraphQL, CI/CD). Group by JD emphasis.
+2. Experience Bullets: 8-10 bullets per role (challenge → action → result format). Create new JD-aligned bullets if needed. Emphasize main JD tech stack in recent roles; distribute secondary technologies across earlier positions. Each bullet must describe a real system or outcome. Bold all keywords, tools, technologies, and skills explicitly mentioned in the Job Description (e.g., React, TypeScript, Node.js, AWS, REST API, GraphQL, Docker, CI/CD).
+3. Skills Section: Place after Summary, before Experience. List ALL technologies/tools from JD and candidate experience. Include related ecosystems (REST, GraphQL, CI/CD). Bold group by JD emphasis.
 4. Summary: Integrate high-priority JD skills/technologies, keep keyword-dense but natural.
-5. Quantification: Preserve original metrics. Add numbers/percentages to 75%+ of bullets. Prefer non-rounded percentages (33%, 47%, 92%).
+5. Quantification: Preserve original metrics. Add numbers/percentages to 75%+ of bullets. Prefer non-rounded percentages (33%, 47%, 92%). 
 6. Verb Variety: No action verb (developed, led, built, etc.) more than twice. Never repeat verbs in adjacent bullets.
 7. Preserve: Company names, job titles, dates, section headers, and formatting exactly as original.
 
@@ -49,13 +49,15 @@ STYLE & HUMANIZATION:
 - No em dashes; use commas/semicolons/hyphens
 - Subtle domain context and idiomatic phrasing
 - Ensure realistic, contextually plausible content
+- Email should be plain text, not a hyperlink.
 
 OUTPUT:
 - Output ONLY plain text content. Do NOT generate PDF files, binary data, or any file formats.
 - Do NOT include PDF formatting, file headers, or any file structure.
-- Output ONLY the resume text content as plain, readable text.
+- Output ONLY the resume text content as markdown format
 - Match original format exactly. Include unchanged headline. Label sections clearly with original spacing/order.
 - No decorative lines, symbols, or commentary. Plain text only.
+- Do not ask questions regarding resume style. Follow the base resume style exactly.
 
 Base resume: \${baseResume}
 Job description: \${jobDescription}

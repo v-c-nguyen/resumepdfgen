@@ -4,14 +4,14 @@ import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { getBaseResumeByName } from '@/app/data/db';
 import { buildPrompt } from '@/app/utils/promptBuilder';
 import { parseResume, TemplateContext } from './utils';
-import { renderTemplate1 } from './templates/template1';
+// import { renderTemplate1 } from './templates/template1';
 import { renderTemplate2 } from './templates/template2';
 import { renderTemplate3 } from './templates/template3';
 import { renderTemplate4 } from './templates/template4';
-import { renderTemplate5 } from './templates/template5';
-import { renderTemplate6 } from './templates/template6';
-import { renderTemplate7 } from './templates/template7';
-import { renderTemplate8 } from './templates/template8';
+// import { renderTemplate5 } from './templates/template5';
+// import { renderTemplate6 } from './templates/template6';
+// import { renderTemplate7 } from './templates/template7';
+// import { renderTemplate8 } from './templates/template8';
 
 // Template router - routes to appropriate template renderer
 async function generateResumePdf(resumeText: string, template: number = 1): Promise<Uint8Array> {
@@ -38,7 +38,7 @@ async function generateResumePdf(resumeText: string, template: number = 1): Prom
   // Route to appropriate template
   switch (template) {
     case 1:
-      return await renderTemplate1(context);
+      // return await renderTemplate1(context);
     case 2:
       return await renderTemplate2(context);
     case 3:
@@ -46,15 +46,15 @@ async function generateResumePdf(resumeText: string, template: number = 1): Prom
     case 4:
       return await renderTemplate4(context);
     case 5:
-      return await renderTemplate5(context);
+      // return await renderTemplate5(context);
     case 6:
-      return await renderTemplate6(context);
+      // return await renderTemplate6(context);
     case 7:
-      return await renderTemplate7(context);
+      // return await renderTemplate7(context);
     case 8:
-      return await renderTemplate8(context);
+      // return await renderTemplate8(context);
     default:
-      return await renderTemplate1(context);
+      return await renderTemplate2(context);
   }
 }
 
@@ -68,9 +68,9 @@ export async function POST(req: NextRequest) {
     const baseResumeProfile = formData.get('base_resume_profile') as string | null;
 
     // Validate required fields
-    if (!jobDescription || !company || !role) {
+    if (!jobDescription) {
       return new NextResponse(
-        JSON.stringify({ error: 'Missing required fields: job_description, company, role' }),
+        JSON.stringify({ error: 'Missing required fields: job_description' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -115,8 +115,18 @@ export async function POST(req: NextRequest) {
     // 4. Generate PDF with template
     const pdfBytes = await generateResumePdf(tailoredResume, pdfTemplate);
 
-    // 5. Return PDF as response
-    const fileBase = `${(baseResumeProfile && baseResumeProfile.replace(/[^a-zA-Z0-9_]/g, '_'))}_${company.replace(/[^a-zA-Z0-9_]/g, '_')}_${role.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+    // 5. Return PDF as responseconst sanitize = v => v.replace(/[^a-zA-Z0-9_]/g, '_');
+    const sanitize = (v: string) => v.replace(/[^a-zA-Z0-9_]/g, '_');
+
+    const fileBase = [
+      baseResumeProfile,
+      company,
+      role
+    ]
+      .filter(Boolean)            // remove empty / null / undefined
+      .map((v: string | null) => v?.replace(/[^a-zA-Z0-9_]/g, '_'))              // sanitize each part
+      .join('_');
+
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {

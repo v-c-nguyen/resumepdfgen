@@ -60,7 +60,7 @@ export default function Home() {
           </div>
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Job Description:
+              Resume Text:
             </label>
             <textarea
               name="job_description"
@@ -74,7 +74,6 @@ export default function Home() {
             <label className="block text-gray-700 font-medium mb-2">Company:</label>
             <input
               name="company"
-              required
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
             />
           </div>
@@ -82,7 +81,6 @@ export default function Home() {
             <label className="block text-gray-700 font-medium mb-2">Role:</label>
             <input
               name="role"
-              required
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
             />
           </div>
