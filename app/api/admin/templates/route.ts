@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readdir } from 'fs/promises';
 import { join } from 'path';
+import { prisma } from '@/lib/prisma';
 
 // Helper to verify admin session
 function isAuthenticated(req: NextRequest): boolean {
@@ -8,7 +9,7 @@ function isAuthenticated(req: NextRequest): boolean {
   return !!sessionToken;
 }
 
-// GET - Fetch all available templates from the templates folder
+// GET - Fetch all available templates from the templates folder with usage counts
 export async function GET(req: NextRequest) {
   if (!isAuthenticated(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,6 +22,20 @@ export async function GET(req: NextRequest) {
     // Read all files in the templates directory
     const files = await readdir(templatesDir);
     
+    // Get usage counts from database
+    const profileCounts = await prisma.profile.groupBy({
+      by: ['pdfTemplate'],
+      _count: {
+        pdfTemplate: true,
+      },
+    });
+
+    // Create a map of template number to count
+    const countMap = new Map<number, number>();
+    profileCounts.forEach((item) => {
+      countMap.set(item.pdfTemplate, item._count.pdfTemplate);
+    });
+    
     // Filter and extract template numbers from filenames (e.g., template2.ts -> 2)
     const templates = files
       .filter(file => file.startsWith('template') && file.endsWith('.ts'))
@@ -29,14 +44,16 @@ export async function GET(req: NextRequest) {
         const match = file.match(/template(\d+)\.ts/);
         if (match) {
           const value = parseInt(match[1], 10);
+          const usageCount = countMap.get(value) || 0;
           return {
             value,
-            label: `Template${value}`
+            label: `Template${value}`,
+            usageCount
           };
         }
         return null;
       })
-      .filter((template): template is { value: number; label: string } => template !== null)
+      .filter((template): template is { value: number; label: string; usageCount: number } => template !== null)
       .sort((a, b) => a.value - b.value); // Sort by template number
 
     return NextResponse.json({ templates });
