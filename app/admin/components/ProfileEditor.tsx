@@ -10,6 +10,7 @@ interface ProfileEditorProps {
 interface TemplateOption {
   value: number;
   label: string;
+  usageCount?: number;
 }
 
 export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps) {
@@ -22,6 +23,9 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
   const [success, setSuccess] = useState('');
   const [pdfTemplates, setPdfTemplates] = useState<TemplateOption[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Default prompt template
   const defaultPromptTemplate = `
@@ -29,10 +33,10 @@ You are a technical resume assistant. Align the resume with the Job Description 
 
 CORE REQUIREMENTS:
 1. Keyword Match: Use exact JD technology/tool names. Cross-link skills (e.g., "React with TypeScript") for ATS scoring. Include all JD skills/ecosystems.
-2. Experience Bullets: 8-10 bullets per role (challenge → action → result format). Create new JD-aligned bullets if needed. Emphasize main JD tech stack in recent roles; distribute secondary technologies across earlier positions. Each bullet must describe a real system or outcome. Bold all keywords, tools, technologies, and skills explicitly mentioned in the Job Description (e.g., React, TypeScript, Node.js, AWS, REST API, GraphQL, Docker, CI/CD).
-3. Skills Section: Place after Summary, before Experience. List ALL technologies/tools from JD and candidate experience. Include related ecosystems (REST, GraphQL, CI/CD). Bold group by JD emphasis.
+2. Experience Bullets: 8-10 bullets per role (challenge → action → result format). Create new JD-aligned bullets if needed. Emphasize main JD tech stack in recent roles; distribute secondary technologies across earlier positions. Each bullet must describe a real system or outcome.
+3. Skills Section: Place after Summary, before Experience. List ALL technologies/tools from JD and candidate experience. Include related ecosystems (REST, GraphQL, CI/CD). Group by JD emphasis.
 4. Summary: Integrate high-priority JD skills/technologies, keep keyword-dense but natural.
-5. Quantification: Preserve original metrics. Add numbers/percentages to 75%+ of bullets. Prefer non-rounded percentages (33%, 47%, 92%). 
+5. Quantification: Preserve original metrics. Add numbers/percentages to 75%+ of bullets. Prefer non-rounded percentages (33%, 47%, 92%).
 6. Verb Variety: No action verb (developed, led, built, etc.) more than twice. Never repeat verbs in adjacent bullets.
 7. Preserve: Company names, job titles, dates, section headers, and formatting exactly as original.
 
@@ -91,6 +95,15 @@ Job description: \${jobDescription}
     }
     fetchTemplates();
   }, []);
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     if (profiles.length > 0 && !selectedProfileName) {
@@ -164,6 +177,14 @@ Job description: \${jobDescription}
         setIsCreating(false);
         setSelectedProfileName(editingProfile.name);
         onUpdate();
+        // Refresh template counts after profile update
+        const templatesResponse = await fetch('/api/admin/templates');
+        if (templatesResponse.ok) {
+          const templatesData = await templatesResponse.json();
+          if (templatesData.templates && Array.isArray(templatesData.templates)) {
+            setPdfTemplates(templatesData.templates);
+          }
+        }
       } else {
         setError(data.error || 'Failed to save profile');
       }
@@ -189,6 +210,14 @@ Job description: \${jobDescription}
           setSelectedProfileName(null);
         }
         onUpdate();
+        // Refresh template counts after profile deletion
+        const templatesResponse = await fetch('/api/admin/templates');
+        if (templatesResponse.ok) {
+          const templatesData = await templatesResponse.json();
+          if (templatesData.templates && Array.isArray(templatesData.templates)) {
+            setPdfTemplates(templatesData.templates);
+          }
+        }
       } else {
         const data = await response.json();
         setError(data.error || 'Failed to delete profile');
@@ -277,28 +306,125 @@ Job description: \${jobDescription}
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select PDF Template
               </label>
-              <select
-                value={editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)}
-                onChange={(e) => setEditingProfile({ ...editingProfile, pdfTemplate: Number(e.target.value) })}
-                disabled={templatesLoading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                {templatesLoading ? (
-                  <option value="">Loading templates...</option>
-                ) : pdfTemplates.length > 0 ? (
-                  pdfTemplates.map((template) => (
-                    <option key={template.value} value={template.value}>
-                      {template.label}
-                    </option>
-                  ))
-                ) : (
-                  <option value={1}>Template1 (default)</option>
-                )}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)}
+                  onChange={(e) => {
+                    const newTemplate = Number(e.target.value);
+                    setEditingProfile({ ...editingProfile, pdfTemplate: newTemplate });
+                    setShowPreview(false);
+                    setPreviewUrl(null);
+                  }}
+                  disabled={templatesLoading}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  {templatesLoading ? (
+                    <option value="">Loading templates...</option>
+                  ) : pdfTemplates.length > 0 ? (
+                    pdfTemplates.map((template) => (
+                      <option key={template.value} value={template.value}>
+                        {template.label} {template.usageCount !== undefined ? `(${template.usageCount} ${template.usageCount === 1 ? 'profile' : 'profiles'})` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    <option value={1}>Template1 (default)</option>
+                  )}
+                </select>
+                <button
+                  onClick={async () => {
+                    const template = editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1);
+                    // Clean up old preview URL if exists
+                    if (previewUrl) {
+                      URL.revokeObjectURL(previewUrl);
+                      setPreviewUrl(null);
+                    }
+                    setPreviewLoading(true);
+                    setShowPreview(true);
+                    try {
+                      const response = await fetch(`/api/admin/templates/preview?template=${template}`);
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        setPreviewUrl(url);
+                      } else {
+                        setError('Failed to load preview');
+                        setShowPreview(false);
+                      }
+                    } catch (err) {
+                      setError('Failed to load preview');
+                      setShowPreview(false);
+                    } finally {
+                      setPreviewLoading(false);
+                    }
+                  }}
+                  disabled={templatesLoading || previewLoading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
+                >
+                  {previewLoading ? 'Loading...' : 'Preview'}
+                </button>
+              </div>
               <p className="mt-2 text-xs text-gray-500">
-                Choose the PDF template style for this profile
+                Choose the PDF template style for this profile. Click Preview to see how it looks.
               </p>
+              {pdfTemplates.length > 0 && (
+                <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Template Usage:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {pdfTemplates.map((template) => (
+                      <div key={template.value} className="text-xs text-gray-600">
+                        <span className="font-medium">{template.label}:</span>{' '}
+                        <span className="text-gray-500">
+                          {template.usageCount !== undefined 
+                            ? `${template.usageCount} ${template.usageCount === 1 ? 'profile' : 'profiles'}`
+                            : '0 profiles'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+            
+            {/* Preview Section */}
+            {showPreview && (
+              <div className="mt-4 border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-700">Template Preview</h4>
+                  <button
+                    onClick={() => {
+                      setShowPreview(false);
+                      if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                      }
+                      setPreviewUrl(null);
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="p-4">
+                  {previewLoading ? (
+                    <div className="flex items-center justify-center h-96">
+                      <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <p className="mt-4 text-gray-600">Generating preview...</p>
+                      </div>
+                    </div>
+                  ) : previewUrl ? (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                      <iframe
+                        src={previewUrl}
+                        className="w-full h-[600px] border-0"
+                        title="Template Preview"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Custom Prompt Editor */}
@@ -411,7 +537,14 @@ Job description: \${jobDescription}
                     {profile.customPrompt && (
                       <p className="text-blue-600">✓ Custom prompt configured</p>
                     )}
-                    <p>PDF Template: {pdfTemplates.find(t => t.value === (profile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)))?.label || `Template${profile.pdfTemplate || 1}`}</p>
+                    <p>PDF Template: {(() => {
+                      const template = pdfTemplates.find(t => t.value === (profile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)));
+                      const templateLabel = template?.label || `Template${profile.pdfTemplate || 1}`;
+                      const usageCount = template?.usageCount;
+                      return usageCount !== undefined 
+                        ? `${templateLabel} (${usageCount} ${usageCount === 1 ? 'profile' : 'profiles'})`
+                        : templateLabel;
+                    })()}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
