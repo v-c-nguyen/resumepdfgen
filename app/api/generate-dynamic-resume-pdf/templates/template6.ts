@@ -21,6 +21,7 @@ function renderBodyContentTemplate6(
   
   const bodyLines = body.split('\n');
   let firstJob = true;
+  let currentSection = '';
   
   for (let i = 0; i < bodyLines.length; i++) {
     const line = bodyLines[i].trim();
@@ -29,9 +30,14 @@ function renderBodyContentTemplate6(
       continue;
     }
     
-    if (line.endsWith(':')) {
+    // Check if this is a section header (ends with colon or is a known section name)
+    const isSectionHeader = line.endsWith(':') || 
+                           /^(summary|education|experience|technical skills|skills|professional experience)$/i.test(line.trim());
+    
+    if (isSectionHeader) {
       y -= 20;
-      const sectionHeader = line.slice(0, -1);
+      const sectionHeader = line.endsWith(':') ? line.slice(0, -1).trim() : line.trim();
+      currentSection = sectionHeader.toLowerCase();
       const sectionLines = wrapText(sectionHeader, fontBold, sectionHeaderSize, contentWidth - 50);
       
       for (const sectionLine of sectionLines) {
@@ -98,14 +104,38 @@ function renderBodyContentTemplate6(
           y -= 10;
         }
       } else {
-        const lineWithoutBullet = line.trim().replace(/^[·•]\s*/, '');
-        const colonIndex = lineWithoutBullet.indexOf(':');
-        const isSkillsCategory = (line.startsWith('·') || line.startsWith('•')) && 
-                                 colonIndex !== -1 && 
-                                 colonIndex < 30 && 
-                                 !lineWithoutBullet.substring(0, colonIndex).includes(' at ');
+        // Check if we're in Summary or Education section first
+        const isSummaryOrEducation = currentSection === 'summary' || currentSection === 'education';
         
-        if (isSkillsCategory) {
+        if (isSummaryOrEducation) {
+          // For Summary and Education, strip any existing bullets and use regular text wrapping
+          const lineWithoutBullet = line.replace(/^[\-\·•]\s*/, '').trim();
+          const wrapped = wrapText(lineWithoutBullet, font, bodySize, contentWidth - 20);
+          
+          for (const lineText of wrapped) {
+            if (y < marginBottom) {
+              context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+              y = PAGE_HEIGHT - 72;
+            }
+            
+            drawTextWithBold(context.page, lineText, left + 20, y, font, fontBold, bodySize, BLACK);
+            y -= bodyLineHeight;
+          }
+        } else {
+          const lineWithoutBullet = line.trim().replace(/^[·•]\s*/, '');
+          const colonIndex = lineWithoutBullet.indexOf(':');
+          // Check if we're in Technical Skills section
+          const isTechnicalSkillsSection = currentSection === 'technical skills' || currentSection === 'skills';
+          // A line is a skills category if:
+          // 1. It starts with a bullet AND has a colon (original check)
+          // 2. OR we're in Technical Skills section AND the line has a colon (new check)
+          const isSkillsCategory = ((line.startsWith('·') || line.startsWith('•')) && 
+                                   colonIndex !== -1 && 
+                                   colonIndex < 30 && 
+                                   !lineWithoutBullet.substring(0, colonIndex).includes(' at ')) ||
+                                  (isTechnicalSkillsSection && colonIndex !== -1 && colonIndex < 50);
+        
+          if (isSkillsCategory) {
           const bulletSymbol = '•';
           const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
           
@@ -171,22 +201,23 @@ function renderBodyContentTemplate6(
             }
             y -= bodyLineHeight + 2;
           }
-        } else {
-          const hasBullet = /^[\-\·•]\s/.test(line);
-          const bulletSymbol = '•';
-          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
-          
-          let textToWrap = line;
-          if (!hasBullet) {
-            textToWrap = bulletSymbol + ' ' + line;
-          }
-          
-          const wrapped = wrapTextWithIndent(textToWrap, font, bodySize, contentWidth - 20);
-          
-          for (let i = 0; i < wrapped.lines.length; i++) {
-            if (y < marginBottom) {
-              context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-              y = PAGE_HEIGHT - 72;
+          } else {
+            // For experience bullets and other content, add bullets if needed
+            const hasBullet = /^[\-\·•]\s/.test(line);
+            const bulletSymbol = '•';
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+            
+            let textToWrap = line;
+            if (!hasBullet) {
+              textToWrap = bulletSymbol + ' ' + line;
+            }
+            
+            const wrapped = wrapTextWithIndent(textToWrap, font, bodySize, contentWidth - 20);
+            
+            for (let i = 0; i < wrapped.lines.length; i++) {
+              if (y < marginBottom) {
+                context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                y = PAGE_HEIGHT - 72;
             }
             
             const lineText = wrapped.lines[i];
@@ -214,6 +245,7 @@ function renderBodyContentTemplate6(
             
             y -= bodyLineHeight;
           }
+          }
         }
       }
     }
@@ -229,7 +261,7 @@ function renderBodyContentTemplate6(
 
 // FULL-WIDTH HEADER BANNER TEMPLATE - Large header banner with content below
 export async function renderTemplate6(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const DARK_TEAL = rgb(0.15, 0.4, 0.4);
@@ -271,6 +303,25 @@ export async function renderTemplate6(context: TemplateContext): Promise<Uint8Ar
         color: rgb(1, 1, 1) // White
       });
       nameY -= NAME_SIZE * 0.8;
+    }
+    nameY -= 6;
+    
+    // Headline (under name, centered, white/light gray)
+    if (headline) {
+      const headlineSize = 10.5;
+      const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH);
+      for (const line of headlineLines) {
+        const textWidth = font.widthOfTextAtSize(line, headlineSize);
+        const centerX = (PAGE_WIDTH - textWidth) / 2;
+        page.drawText(line, { 
+          x: centerX, 
+          y: nameY, 
+          size: headlineSize, 
+          font, 
+          color: rgb(0.95, 0.95, 0.95) // Light gray/white
+        });
+        nameY -= headlineSize * 1.2;
+      }
     }
   }
   

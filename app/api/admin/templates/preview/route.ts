@@ -64,6 +64,7 @@ async function generatePreviewPdf(template: number): Promise<Uint8Array> {
     page,
     font,
     fontBold,
+    headline: parsed.headline,
     name: parsed.name,
     email: parsed.email,
     phone: parsed.phone,

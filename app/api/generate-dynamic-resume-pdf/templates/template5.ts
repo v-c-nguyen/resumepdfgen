@@ -29,10 +29,13 @@ function renderBodyContentTemplate5(
       y -= 8;
       continue;
     }
-        // Check if this is a section header (ends with colon)
-    if (line.endsWith(':')) {
+    // Check if this is a section header (ends with colon or is a known section name)
+    const isSectionHeader = line.endsWith(':') || 
+                           /^(summary|education|experience|technical skills|skills|professional experience)$/i.test(line.trim());
+    
+    if (isSectionHeader) {
       y -= 10;
-      const sectionHeader = line.slice(0, -1).trim();
+      const sectionHeader = line.endsWith(':') ? line.slice(0, -1).trim() : line.trim();
       currentSection = sectionHeader.toLowerCase();
       const sectionLines = wrapText(sectionHeader, fontBold, sectionHeaderSize, contentWidth - 40);
       
@@ -93,10 +96,16 @@ function renderBodyContentTemplate5(
       } else {
         const lineWithoutBullet = line.trim().replace(/^[·•]\s*/, '');
         const colonIndex = lineWithoutBullet.indexOf(':');
-        const isSkillsCategory = (line.startsWith('·') || line.startsWith('•')) && 
+        // Check if we're in Technical Skills section
+        const isTechnicalSkillsSection = currentSection === 'technical skills' || currentSection === 'skills';
+        // A line is a skills category if:
+        // 1. It starts with a bullet AND has a colon (original check)
+        // 2. OR we're in Technical Skills section AND the line has a colon (new check)
+        const isSkillsCategory = ((line.startsWith('·') || line.startsWith('•')) && 
                                  colonIndex !== -1 && 
                                  colonIndex < 30 && 
-                                 !lineWithoutBullet.substring(0, colonIndex).includes(' at ');
+                                 !lineWithoutBullet.substring(0, colonIndex).includes(' at ')) ||
+                                (isTechnicalSkillsSection && colonIndex !== -1 && colonIndex < 50);
         
         if (isSkillsCategory) {
           const bulletSymbol = '•';
@@ -165,47 +174,67 @@ function renderBodyContentTemplate5(
             y -= bodyLineHeight + 4;
           }
         } else {
-          const hasBullet = /^[\-\·•]\s/.test(line);
-          const bulletSymbol = '•';
-          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+          // Check if we're in Summary or Education section first
+          const isSummaryOrEducation = currentSection === 'summary' || currentSection === 'education';
           
-          let textToWrap = line;
-          if (!hasBullet) {
-            textToWrap = bulletSymbol + ' ' + line;
-          }
-          
-          const wrapped = wrapTextWithIndent(textToWrap, font, bodySize, contentWidth - 20);
-          
-          for (let i = 0; i < wrapped.lines.length; i++) {
-            if (y < marginBottom) {
-              context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-              y = PAGE_HEIGHT - 80;
+          if (isSummaryOrEducation) {
+            // For Summary and Education, strip any existing bullets and use regular text wrapping
+            const lineWithoutBullet = line.replace(/^[\-\·•]\s*/, '').trim();
+            const wrapped = wrapText(lineWithoutBullet, font, bodySize, contentWidth - 20);
+            
+            for (const lineText of wrapped) {
+              if (y < marginBottom) {
+                context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                y = PAGE_HEIGHT - 80;
+              }
+              
+              drawTextWithBold(context.page, lineText, left + 15, y, font, fontBold, bodySize, BLACK);
+              y -= bodyLineHeight;
+            }
+          } else {
+            // For experience bullets and other content, add bullets if needed
+            const hasBullet = /^[\-\·•]\s/.test(line);
+            const bulletSymbol = '•';
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+            
+            let textToWrap = line;
+            if (!hasBullet) {
+              textToWrap = bulletSymbol + ' ' + line;
             }
             
-            const lineText = wrapped.lines[i];
-            const xPos = i === 0 ? left + 15 : left + 15 + wrapped.indentWidth;
+            const wrapped = wrapTextWithIndent(textToWrap, font, bodySize, contentWidth - 20);
             
-            if (i === 0 && (lineText.startsWith('•') || lineText.startsWith('·') || lineText.startsWith('-'))) {
-              const bulletMatch = lineText.match(/^([\-\·•])\s*(.*)/);
-              if (bulletMatch) {
-                const [, bulletChar, content] = bulletMatch;
-                context.page.drawText(bulletChar, {
-                  x: xPos,
-                  y,
-                  size: bodySize,
-                  font,
-                  color: BLACK
-                });
-                const contentX = xPos + font.widthOfTextAtSize(bulletChar + ' ', bodySize);
-                drawTextWithBold(context.page, content, contentX, y, font, fontBold, bodySize, BLACK);
+            for (let i = 0; i < wrapped.lines.length; i++) {
+              if (y < marginBottom) {
+                context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+                y = PAGE_HEIGHT - 80;
+              }
+              
+              const lineText = wrapped.lines[i];
+              const xPos = i === 0 ? left + 15 : left + 15 + wrapped.indentWidth;
+              
+              if (i === 0 && (lineText.startsWith('•') || lineText.startsWith('·') || lineText.startsWith('-'))) {
+                const bulletMatch = lineText.match(/^([\-\·•])\s*(.*)/);
+                if (bulletMatch) {
+                  const [, bulletChar, content] = bulletMatch;
+                  context.page.drawText(bulletChar, {
+                    x: xPos,
+                    y,
+                    size: bodySize,
+                    font,
+                    color: BLACK
+                  });
+                  const contentX = xPos + font.widthOfTextAtSize(bulletChar + ' ', bodySize);
+                  drawTextWithBold(context.page, content, contentX, y, font, fontBold, bodySize, BLACK);
+                } else {
+                  drawTextWithBold(context.page, lineText, xPos, y, font, fontBold, bodySize, BLACK);
+                }
               } else {
                 drawTextWithBold(context.page, lineText, xPos, y, font, fontBold, bodySize, BLACK);
               }
-            } else {
-              drawTextWithBold(context.page, lineText, xPos, y, font, fontBold, bodySize, BLACK);
+              
+              y -= bodyLineHeight;
             }
-            
-            y -= bodyLineHeight;
           }
         }
       }
@@ -222,7 +251,7 @@ function renderBodyContentTemplate5(
 
 // RIGHT-ALIGNED HEADER TEMPLATE - Name and contact right-aligned at top, content flows naturally
 export async function renderTemplate5(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const SAGE = rgb(0.5, 0.6, 0.5);
@@ -257,7 +286,26 @@ export async function renderTemplate5(context: TemplateContext): Promise<Uint8Ar
       });
       y -= NAME_SIZE * 1.0;
     }
-    y -= 8;
+    y -= 6;
+    
+    // Headline (under name, left-aligned, medium gray)
+    if (headline) {
+      const headlineSize = 10;
+      const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH * 0.7);
+      for (const line of headlineLines) {
+        page.drawText(line, { 
+          x: MARGIN_LEFT, 
+          y, 
+          size: headlineSize, 
+          font, 
+          color: MEDIUM_GRAY 
+        });
+        y -= headlineSize * 1.2;
+      }
+      y -= 4;
+    } else {
+      y -= 4;
+    }
   }
   
   // Contact info (right-aligned, below name)

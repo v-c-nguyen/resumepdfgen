@@ -6,6 +6,7 @@ export interface TemplateContext {
   page: PDFPage;
   font: PDFFont;
   fontBold: PDFFont;
+  headline: string;
   name: string;
   email: string;
   phone: string;

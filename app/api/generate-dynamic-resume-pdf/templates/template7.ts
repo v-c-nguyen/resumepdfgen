@@ -21,6 +21,7 @@ function renderBodyContentTemplate7(
   
   const bodyLines = body.split('\n');
   let firstJob = true;
+  let currentSection = '';
   
   for (let i = 0; i < bodyLines.length; i++) {
     const line = bodyLines[i].trim();
@@ -29,9 +30,14 @@ function renderBodyContentTemplate7(
       continue;
     }
     
-    if (line.endsWith(':')) {
+    // Check if this is a section header (ends with colon or is a known section name)
+    const isSectionHeader = line.endsWith(':') || 
+                           /^(summary|education|experience|technical skills|skills|professional experience)$/i.test(line.trim());
+    
+    if (isSectionHeader) {
       y -= 15;
-      const sectionHeader = line.slice(0, -1);
+      const sectionHeader = line.endsWith(':') ? line.slice(0, -1).trim() : line.trim();
+      currentSection = sectionHeader.toLowerCase();
       const sectionLines = wrapText(sectionHeader, fontBold, sectionHeaderSize, contentWidth - 60);
       
       for (const sectionLine of sectionLines) {
@@ -106,14 +112,38 @@ function renderBodyContentTemplate7(
           y -= 10;
         }
       } else {
-        const lineWithoutBullet = line.trim().replace(/^[·•]\s*/, '');
-        const colonIndex = lineWithoutBullet.indexOf(':');
-        const isSkillsCategory = (line.startsWith('·') || line.startsWith('•')) && 
-                                 colonIndex !== -1 && 
-                                 colonIndex < 30 && 
-                                 !lineWithoutBullet.substring(0, colonIndex).includes(' at ');
+        // Check if we're in Summary or Education section first
+        const isSummaryOrEducation = currentSection === 'summary' || currentSection === 'education';
         
-        if (isSkillsCategory) {
+        if (isSummaryOrEducation) {
+          // For Summary and Education, strip any existing bullets and use regular text wrapping
+          const lineWithoutBullet = line.replace(/^[\-\·•]\s*/, '').trim();
+          const wrapped = wrapText(lineWithoutBullet, font, bodySize, contentWidth - 20);
+          
+          for (const lineText of wrapped) {
+            if (y < marginBottom) {
+              context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+              y = PAGE_HEIGHT - 72;
+            }
+            
+            drawTextWithBold(context.page, lineText, left + 20, y, font, fontBold, bodySize, BLACK);
+            y -= bodyLineHeight;
+          }
+        } else {
+          const lineWithoutBullet = line.trim().replace(/^[·•]\s*/, '');
+          const colonIndex = lineWithoutBullet.indexOf(':');
+          // Check if we're in Technical Skills section
+          const isTechnicalSkillsSection = currentSection === 'technical skills' || currentSection === 'skills';
+          // A line is a skills category if:
+          // 1. It starts with a bullet AND has a colon (original check)
+          // 2. OR we're in Technical Skills section AND the line has a colon (new check)
+          const isSkillsCategory = ((line.startsWith('·') || line.startsWith('•')) && 
+                                   colonIndex !== -1 && 
+                                   colonIndex < 30 && 
+                                   !lineWithoutBullet.substring(0, colonIndex).includes(' at ')) ||
+                                  (isTechnicalSkillsSection && colonIndex !== -1 && colonIndex < 50);
+        
+          if (isSkillsCategory) {
           const bulletSymbol = '•';
           const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
           
@@ -179,8 +209,9 @@ function renderBodyContentTemplate7(
             }
             y -= bodyLineHeight + 2;
           }
-        } else {
-          const hasBullet = /^[\-\·•]\s/.test(line);
+          } else {
+            // For experience bullets and other content, add bullets if needed
+            const hasBullet = /^[\-\·•]\s/.test(line);
           const bulletSymbol = '•';
           const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
           
@@ -222,6 +253,7 @@ function renderBodyContentTemplate7(
             
             y -= bodyLineHeight;
           }
+          }
         }
       }
     }
@@ -237,7 +269,7 @@ function renderBodyContentTemplate7(
 
 // MINIMALIST GEOMETRIC TEMPLATE - Clean design with geometric shapes and minimal elements
 export async function renderTemplate7(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const ORANGE = rgb(0.9, 0.5, 0.2);
@@ -302,17 +334,8 @@ export async function renderTemplate7(context: TemplateContext): Promise<Uint8Ar
       });
       y -= CONTACT_SIZE * 1.3;
     }
-    y -= 10;
   }
   
-  // Minimal divider (just a thin line)
-  page.drawLine({
-    start: { x: left, y: y },
-    end: { x: right, y: y },
-    thickness: 0.5,
-    color: rgb(0.8, 0.8, 0.8),
-  });
-  y -= 24;
   
   // Render body content
   y = renderBodyContentTemplate7(
