@@ -21,6 +21,7 @@ function renderBodyContentTemplate5(
   
   const bodyLines = body.split('\n');
   let firstJob = true;
+  let currentSection = '';
   
   for (let i = 0; i < bodyLines.length; i++) {
     const line = bodyLines[i].trim();
@@ -28,10 +29,11 @@ function renderBodyContentTemplate5(
       y -= 8;
       continue;
     }
-    
+        // Check if this is a section header (ends with colon)
     if (line.endsWith(':')) {
       y -= 10;
-      const sectionHeader = line.slice(0, -1);
+      const sectionHeader = line.slice(0, -1).trim();
+      currentSection = sectionHeader.toLowerCase();
       const sectionLines = wrapText(sectionHeader, fontBold, sectionHeaderSize, contentWidth - 40);
       
       for (const sectionLine of sectionLines) {
@@ -40,7 +42,7 @@ function renderBodyContentTemplate5(
           y = PAGE_HEIGHT - 80;
         }
         
-        // Section header - simple, clean
+        // Section header - simple, clean (display all section headers including Summary)
         context.page.drawText(sectionLine, { 
           x: left, 
           y, 

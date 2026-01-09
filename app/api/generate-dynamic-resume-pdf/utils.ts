@@ -15,7 +15,37 @@ export interface TemplateContext {
   PAGE_HEIGHT: number;
 }
 
-// Helper to parse resume text
+// Validation helpers
+function isValidEmail(text: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(text.trim());
+}
+
+function isValidPhone(text: string): boolean {
+  // Matches various phone formats:
+  // +1 415 966 0362, +1-415-966-0362, (415) 966-0362, 415-966-0362, 415.966.0362, etc.
+  const phoneRegex = /^[\+]?[\d\s\-\(\)\.]{10,}$/;
+  const cleaned = text.replace(/[\s\-\(\)\.]/g, '');
+  // Should have at least 10 digits
+  return phoneRegex.test(text) && /\d{10,}/.test(cleaned);
+}
+
+function isValidLinkedIn(text: string): boolean {
+  const linkedinRegex = /^(https?:\/\/)?(www\.)?linkedin\.com\/.+/i;
+  return linkedinRegex.test(text.trim());
+}
+
+function isValidLocation(text: string): boolean {
+  // Location typically has city, state or city, country format
+  // Should not be an email, phone, or URL
+  if (isValidEmail(text) || isValidPhone(text) || isValidLinkedIn(text)) {
+    return false;
+  }
+  // Should contain letters and possibly commas, spaces, hyphens
+  return /^[a-zA-Z\s,\-]+$/.test(text.trim()) && text.trim().length > 2;
+}
+
+// Helper to parse resume text with validation
 export function parseResume(resumeText: string): {
   headline: string;
   name: string;
@@ -26,19 +56,96 @@ export function parseResume(resumeText: string): {
   body: string;
 } {
   const lines = resumeText.split('\n');
-  const info: string[] = [];
-  let bodyStart = 0;
+  const result = {
+    headline: '',
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    linkedin: '',
+    body: ''
+  };
+  
+  // Get first two non-empty lines as headline and name
+  const nonEmptyLines: Array<{ line: string; index: number }> = [];
   for (let idx = 0; idx < lines.length; idx++) {
-    if (lines[idx].trim()) info.push(lines[idx].trim());
-    if (info.length === 6) {
-      bodyStart = idx + 1;
+    const trimmed = lines[idx].trim();
+    if (trimmed) {
+      nonEmptyLines.push({ line: trimmed, index: idx });
+    }
+  }
+  
+  // First line = headline, Second line = name
+  if (nonEmptyLines.length > 0) {
+    result.headline = nonEmptyLines[0].line;
+  }
+  if (nonEmptyLines.length > 1) {
+    result.name = nonEmptyLines[1].line;
+  }
+  
+  // Extract and validate email, phone, location, linkedin from remaining lines
+  const maxFieldsToCheck = 15; // Check up to 15 lines for personal info
+  let bodyStart = 0;
+  
+  for (let idx = 2; idx < Math.min(nonEmptyLines.length, maxFieldsToCheck + 2); idx++) {
+    const { line, index } = nonEmptyLines[idx];
+    
+    // If we hit a section header, this is where body starts
+    if (line.endsWith(':')) {
+      bodyStart = index;
+      break;
+    }
+    
+    // Check for clearly identifiable fields (only if not already found)
+    if (!result.email && isValidEmail(line)) {
+      result.email = line;
+      continue;
+    }
+    
+    if (!result.phone && isValidPhone(line)) {
+      result.phone = line;
+      continue;
+    }
+    
+    if (!result.linkedin && isValidLinkedIn(line)) {
+      result.linkedin = line;
+      continue;
+    }
+    
+    if (!result.location && isValidLocation(line)) {
+      result.location = line;
+      continue;
+    }
+    
+    // If we hit body content markers, stop
+    if (line.startsWith('•') || line.startsWith('·') || line.startsWith('-')) {
+      bodyStart = index;
       break;
     }
   }
-  const [headline = '', name = '', email = '', phone = '', location = '', linkedin = ''] = info;
-  while (bodyStart < lines.length && !lines[bodyStart].trim()) bodyStart++;
-  const body = lines.slice(bodyStart).join('\n');
-  return { headline, name, email, phone, location, linkedin, body };
+  
+  // If we didn't find a section header, find the first line that looks like body content
+  if (bodyStart === 0) {
+    for (let idx = 0; idx < lines.length; idx++) {
+      const line = lines[idx].trim();
+      if (line && (line.endsWith(':') || line.startsWith('•') || line.startsWith('·') || line.startsWith('-'))) {
+        bodyStart = idx;
+        break;
+      }
+    }
+    // If still no body start found, start after reasonable number of header lines
+    if (bodyStart === 0) {
+      bodyStart = Math.min(maxFieldsToCheck + 2, lines.length);
+    }
+  }
+  
+  // Skip empty lines at the start of body
+  while (bodyStart < lines.length && !lines[bodyStart].trim()) {
+    bodyStart++;
+  }
+  
+  result.body = lines.slice(bodyStart).join('\n');
+  return result;
 }
 
 // Helper to convert date format from MM/YYYY to MMM YYYY
