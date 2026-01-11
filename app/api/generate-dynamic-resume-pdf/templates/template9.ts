@@ -61,9 +61,19 @@ function renderBodyContentTemplate9(
       const isJobExperience = / at .+:.+/.test(line);
       
       if (isJobExperience) {
+        // Match format: "JobTitle at CompanyName, CompanyLocation : Period"
         const match = line.match(/^(.+?) at (.+?):\s*(.+)$/);
         if (match) {
-          const [, jobTitle, companyName, period] = match;
+          const [, jobTitle, companyPart, period] = match;
+          
+          // Split company part by last comma to separate company name and location
+          let companyName = companyPart.trim();
+          let companyLocation = '';
+          const lastCommaIndex = companyPart.indexOf(',');
+          if (lastCommaIndex !== -1) {
+            companyName = companyPart.substring(0, lastCommaIndex).trim();
+            companyLocation = companyPart.substring(lastCommaIndex + 1).trim();
+          }
           
           if (!firstJob) {
             y -= 22;
@@ -81,7 +91,9 @@ function renderBodyContentTemplate9(
           }
           
           const formattedPeriod = formatDate(period.trim());
-          const companyPeriodLine = `${companyName.trim()}  •  ${formattedPeriod}`;
+          // Display: "CompanyName, CompanyLocation  •  Period" (or just "CompanyName  •  Period" if no location)
+          const companyInfo = companyLocation ? `${companyName}  •  ${companyLocation}` : companyName;
+          const companyPeriodLine = `${companyInfo}  •  ${formattedPeriod}`;
           const companyPeriodLines = wrapText(companyPeriodLine, font, bodySize, contentWidth - 20);
           for (const line of companyPeriodLines) {
             if (y < marginBottom) {
@@ -128,7 +140,7 @@ function renderBodyContentTemplate9(
         
           if (isSkillsCategory) {
           const bulletSymbol = '•';
-          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
           
           const colonIndex = lineWithoutBullet.indexOf(':');
           if (colonIndex !== -1) {
@@ -196,14 +208,17 @@ function renderBodyContentTemplate9(
             // For experience bullets and other content, add bullets if needed
             const hasBullet = /^[\-\·•]\s/.test(line);
             const bulletSymbol = '•';
-            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
             
             let textToWrap = line;
             if (!hasBullet) {
-              textToWrap = bulletSymbol + ' ' + line;
+              textToWrap = bulletSymbol + '   ' + line;
             }
             
             const wrapped = wrapTextWithIndent(textToWrap, font, bodySize, contentWidth - 20);
+            
+            // Calculate the content start position (after bullet) to align all wrapped lines
+            let contentStartX = left + 15 + bulletWidth;
             
             for (let i = 0; i < wrapped.lines.length; i++) {
               if (y < marginBottom) {
@@ -212,26 +227,27 @@ function renderBodyContentTemplate9(
               }
               
               const lineText = wrapped.lines[i];
-              const xPos = i === 0 ? left + 15 : left + 15 + wrapped.indentWidth;
               
               if (i === 0 && (lineText.startsWith('•') || lineText.startsWith('·') || lineText.startsWith('-'))) {
                 const bulletMatch = lineText.match(/^([\-\·•])\s*(.*)/);
                 if (bulletMatch) {
                   const [, bulletChar, content] = bulletMatch;
+                  const bulletX = left + 15;
                   context.page.drawText(bulletChar, {
-                    x: xPos,
+                    x: bulletX,
                     y,
                     size: bodySize,
                     font,
                     color: BLACK
                   });
-                  const contentX = xPos + font.widthOfTextAtSize(bulletChar + ' ', bodySize);
-                  drawTextWithBold(context.page, content, contentX, y, font, fontBold, bodySize, BLACK);
+                  contentStartX = bulletX + font.widthOfTextAtSize(bulletChar + '   ', bodySize);
+                  drawTextWithBold(context.page, content, contentStartX, y, font, fontBold, bodySize, BLACK);
                 } else {
-                  drawTextWithBold(context.page, lineText, xPos, y, font, fontBold, bodySize, BLACK);
+                  drawTextWithBold(context.page, lineText, left + 15, y, font, fontBold, bodySize, BLACK);
                 }
               } else {
-                drawTextWithBold(context.page, lineText, xPos, y, font, fontBold, bodySize, BLACK);
+                // For wrapped lines, align to the content start position (after bullet)
+                drawTextWithBold(context.page, lineText, contentStartX, y, font, fontBold, bodySize, BLACK);
               }
               
               y -= bodyLineHeight;

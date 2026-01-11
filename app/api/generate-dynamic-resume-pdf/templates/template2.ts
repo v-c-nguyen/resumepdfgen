@@ -124,9 +124,19 @@ function renderBodyContentTemplate2(
       const isJobExperience = / at .+:.+/.test(line);
       
       if (isJobExperience) {
+        // Match format: "JobTitle at CompanyName, CompanyLocation : Period"
         const match = line.match(/^(.+?) at (.+?):\s*(.+)$/);
         if (match) {
-          const [, jobTitle, companyName, period] = match;
+          const [, jobTitle, companyPart, period] = match;
+          
+          // Split company part by last comma to separate company name and location
+          let companyName = companyPart.trim();
+          let companyLocation = '';
+          const lastCommaIndex = companyPart.indexOf(',');
+          if (lastCommaIndex !== -1) {
+            companyName = companyPart.substring(0, lastCommaIndex).trim();
+            companyLocation = companyPart.substring(lastCommaIndex + 1).trim();
+          }
           
           if (!firstJob) {
             y -= 14;
@@ -160,7 +170,9 @@ function renderBodyContentTemplate2(
           
           // Company and period
           const formattedPeriod = formatDate(period.trim());
-          const companyPeriodLine = `${companyName.trim()}  |  ${formattedPeriod}`;
+          // Display: "CompanyName, CompanyLocation  |  Period" (or just "CompanyName  |  Period" if no location)
+          const companyInfo = companyLocation ? `${companyName}  |  ${companyLocation}` : companyName;
+          const companyPeriodLine = `${companyInfo}  |  ${formattedPeriod}`;
           const companyPeriodLines = wrapText(companyPeriodLine, font, bodySize, contentWidth - 20);
           for (const line of companyPeriodLines) {
             if (y < marginBottom) {
@@ -239,7 +251,7 @@ function renderBodyContentTemplate2(
           if (isSkillsCategory) {
           // Keep the bullet/dot prefix
           const bulletSymbol = '•';
-          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
           
           // Extract category name (part before colon) and skills (part after colon)
           const colonIndex = lineWithoutBullet.indexOf(':');
@@ -402,15 +414,18 @@ function renderBodyContentTemplate2(
             // Check if line already has a bullet
             const hasBullet = /^[\-\·•]\s/.test(line);
             const bulletSymbol = '•';
-            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
             
             let textToWrap = line;
             if (!hasBullet) {
               // Add bullet if not present
-              textToWrap = bulletSymbol + ' ' + line;
+              textToWrap = bulletSymbol + '   ' + line;
             }
             
             const wrapped = wrapTextWithIndent(textToWrap, font, bodySize, contentWidth - 20);
+            
+            // Calculate the content start position (after bullet) to align all wrapped lines
+            let contentStartX = left + 20 + bulletWidth;
             
             for (let i = 0; i < wrapped.lines.length; i++) {
               if (y < marginBottom) {
@@ -433,7 +448,6 @@ function renderBodyContentTemplate2(
               }
               
               const lineText = wrapped.lines[i];
-              const xPos = i === 0 ? left + 20 : left + 20 + wrapped.indentWidth;
               
               // Check if line starts with bullet and draw it separately (not bold)
               if (i === 0 && (lineText.startsWith('•') || lineText.startsWith('·') || lineText.startsWith('-'))) {
@@ -441,23 +455,24 @@ function renderBodyContentTemplate2(
                 if (bulletMatch) {
                   const [, bulletChar, content] = bulletMatch;
                   // Draw bullet in regular font (not bold)
+                  const bulletX = left + 20;
                   context.page.drawText(bulletChar, {
-                    x: xPos,
+                    x: bulletX,
                     y,
                     size: bodySize,
                     font,
                     color: BLACK
                   });
                   // Draw content - support **bold** markers but default to regular font
-                  const contentX = xPos + font.widthOfTextAtSize(bulletChar + ' ', bodySize);
-                  drawTextWithBold(context.page, content, contentX, y, font, fontBold, bodySize, BLACK);
+                  contentStartX = bulletX + font.widthOfTextAtSize(bulletChar + '   ', bodySize);
+                  drawTextWithBold(context.page, content, contentStartX, y, font, fontBold, bodySize, BLACK);
                 } else {
                   // No bullet match, draw entire line with bold support
-                  drawTextWithBold(context.page, lineText, xPos, y, font, fontBold, bodySize, BLACK);
+                  drawTextWithBold(context.page, lineText, left + 20, y, font, fontBold, bodySize, BLACK);
                 }
               } else {
-                // Regular line (wrapped continuation), no bullet, regular font with bold support
-                drawTextWithBold(context.page, lineText, xPos, y, font, fontBold, bodySize, BLACK);
+                // For wrapped lines, align to the content start position (after bullet)
+                drawTextWithBold(context.page, lineText, contentStartX, y, font, fontBold, bodySize, BLACK);
               }
               
               y -= bodyLineHeight;

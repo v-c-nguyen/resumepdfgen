@@ -80,9 +80,19 @@ function renderBodyContentTemplate3(
       const isJobExperience = / at .+:.+/.test(line);
       
       if (isJobExperience) {
+        // Match format: "JobTitle at CompanyName, CompanyLocation : Period"
         const match = line.match(/^(.+?) at (.+?):\s*(.+)$/);
         if (match) {
-          const [, jobTitle, companyName, period] = match;
+          const [, jobTitle, companyPart, period] = match;
+          
+          // Split company part by last comma to separate company name and location
+          let companyName = companyPart.trim();
+          let companyLocation = '';
+          const lastCommaIndex = companyPart.indexOf(',');
+          if (lastCommaIndex !== -1) {
+            companyName = companyPart.substring(0, lastCommaIndex).trim();
+            companyLocation = companyPart.substring(lastCommaIndex + 1).trim();
+          }
           
           if (!firstJob) {
             y -= 14;
@@ -109,7 +119,9 @@ function renderBodyContentTemplate3(
           
           // Company and period
           const formattedPeriod = formatDate(period.trim());
-          const companyPeriodLine = `${companyName.trim()}  •  ${formattedPeriod}`;
+          // Display: "CompanyName, CompanyLocation  •  Period" (or just "CompanyName  •  Period" if no location)
+          const companyInfo = companyLocation ? `${companyName}  •  ${companyLocation}` : companyName;
+          const companyPeriodLine = `${companyInfo}  •  ${formattedPeriod}`;
           const companyPeriodLines = wrapText(companyPeriodLine, font, bodySize, contentWidth - 30);
           for (const line of companyPeriodLines) {
             if (y < marginBottom) {
@@ -166,7 +178,7 @@ function renderBodyContentTemplate3(
           if (isSkillsCategory && colonIndex !== -1) {
             // Split category name and skills text, render category name in bold
             const bulletSymbol = '•';
-            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + ' ', bodySize);
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
             
             const categoryName = lineWithoutBullet.substring(0, colonIndex + 1).trim();
             const skillsText = lineWithoutBullet.substring(colonIndex + 1).trim();
@@ -243,7 +255,20 @@ function renderBodyContentTemplate3(
             y -= bodyLineHeight + 2;
           } else {
             // For experience bullets and other content, add bullets if needed
-            const wrapped = wrapTextWithIndent(line, font, bodySize, contentWidth - 30);
+            const hasBullet = /^[\-\·•]\s/.test(line);
+            const bulletSymbol = '•';
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
+            
+            let textToWrap = line;
+            if (!hasBullet) {
+              textToWrap = bulletSymbol + '   ' + line;
+            }
+            
+            const wrapped = wrapTextWithIndent(textToWrap, font, bodySize, contentWidth - 30);
+            
+            // Calculate the content start position (after bullet) to align all wrapped lines
+            let contentStartX = left + 30 + bulletWidth;
+            
             for (let i = 0; i < wrapped.lines.length; i++) {
               if (y < marginBottom) {
                 context.page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
@@ -256,8 +281,31 @@ function renderBodyContentTemplate3(
                 });
                 y = PAGE_HEIGHT - 72;
               }
-              const xPos = i === 0 ? left + 30 : left + 30 + wrapped.indentWidth;
-              drawTextWithBold(context.page, wrapped.lines[i], xPos, y, font, fontBold, bodySize, BLACK);
+              
+              const lineText = wrapped.lines[i];
+              
+              if (i === 0 && (lineText.startsWith('•') || lineText.startsWith('·') || lineText.startsWith('-'))) {
+                const bulletMatch = lineText.match(/^([\-\·•])\s*(.*)/);
+                if (bulletMatch) {
+                  const [, bulletChar, content] = bulletMatch;
+                  const bulletX = left + 30;
+                  context.page.drawText(bulletChar, {
+                    x: bulletX,
+                    y,
+                    size: bodySize,
+                    font,
+                    color: BLACK
+                  });
+                  contentStartX = bulletX + font.widthOfTextAtSize(bulletChar + '   ', bodySize);
+                  drawTextWithBold(context.page, content, contentStartX, y, font, fontBold, bodySize, BLACK);
+                } else {
+                  drawTextWithBold(context.page, lineText, left + 30, y, font, fontBold, bodySize, BLACK);
+                }
+              } else {
+                // For wrapped lines, align to the content start position (after bullet)
+                drawTextWithBold(context.page, lineText, contentStartX, y, font, fontBold, bodySize, BLACK);
+              }
+              
               y -= bodyLineHeight;
             }
           }
