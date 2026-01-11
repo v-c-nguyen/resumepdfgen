@@ -286,11 +286,9 @@ export async function renderTemplate5(context: TemplateContext): Promise<Uint8Ar
       });
       y -= NAME_SIZE * 1.0;
     }
-    y -= 6;
-    
     // Headline (under name, left-aligned, medium gray)
     if (headline) {
-      const headlineSize = 10;
+      const headlineSize = 12;
       const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH * 0.7);
       for (const line of headlineLines) {
         page.drawText(line, { 

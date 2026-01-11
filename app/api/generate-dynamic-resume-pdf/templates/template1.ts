@@ -374,11 +374,11 @@ export async function renderTemplate1(context: TemplateContext): Promise<Uint8Ar
       });
       nameY -= NAME_SIZE * 1.0;
     }
-    nameY -= 6;
+    nameY += 5;
     
     // Headline (under name, centered, medium gray)
     if (headline) {
-      const headlineSize = 11;
+      const headlineSize = 12;
       const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH);
       for (const line of headlineLines) {
         const textWidth = font.widthOfTextAtSize(line, headlineSize);
@@ -400,7 +400,7 @@ export async function renderTemplate1(context: TemplateContext): Promise<Uint8Ar
   if (contactParts.length > 0) {
     const contactLine = contactParts.join('  •  ');
     const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    let contactY = PAGE_HEIGHT - 85;
+    let contactY = PAGE_HEIGHT - 90;
     for (const line of contactLines) {
       const textWidth = font.widthOfTextAtSize(line, CONTACT_SIZE);
       const centerX = (PAGE_WIDTH - textWidth) / 2;

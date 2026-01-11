@@ -304,11 +304,9 @@ export async function renderTemplate6(context: TemplateContext): Promise<Uint8Ar
       });
       nameY -= NAME_SIZE * 0.8;
     }
-    nameY -= 6;
-    
     // Headline (under name, centered, white/light gray)
     if (headline) {
-      const headlineSize = 10.5;
+      const headlineSize = 12;
       const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH);
       for (const line of headlineLines) {
         const textWidth = font.widthOfTextAtSize(line, headlineSize);
@@ -328,9 +326,9 @@ export async function renderTemplate6(context: TemplateContext): Promise<Uint8Ar
   // Contact info in header (white text)
   const contactParts = [location, phone, email].filter(Boolean);
   if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  •  ');
+    const contactLine = contactParts.join('  |  ');
     const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    let contactY = PAGE_HEIGHT - HEADER_HEIGHT + 20;
+    let contactY = PAGE_HEIGHT - HEADER_HEIGHT + 25;
     for (const line of contactLines) {
       const textWidth = font.widthOfTextAtSize(line, CONTACT_SIZE);
       const centerX = (PAGE_WIDTH - textWidth) / 2;

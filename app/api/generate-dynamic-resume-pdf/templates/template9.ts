@@ -305,11 +305,10 @@ export async function renderTemplate9(context: TemplateContext): Promise<Uint8Ar
       });
       nameY -= NAME_SIZE * 1.0;
     }
-    nameY -= 6;
-    
+    nameY += 5;
     // Headline (under name, left-aligned, light gray/white)
     if (headline) {
-      const headlineSize = 10;
+      const headlineSize = 12;
       const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH * 0.65);
       for (const line of headlineLines) {
         page.drawText(line, { 

@@ -386,11 +386,9 @@ export async function renderTemplate8(context: TemplateContext): Promise<Uint8Ar
       });
       y -= NAME_SIZE * 0.9;
     }
-    y -= 6;
-    
-    // Headline (under name, centered, medium gray)
+    y -= 5// Headline (under name, centered, medium gray)
     if (headline) {
-      const headlineSize = 10;
+      const headlineSize = 12;
       const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH);
       for (const line of headlineLines) {
         const textWidth = font.widthOfTextAtSize(line, headlineSize);
@@ -404,9 +402,9 @@ export async function renderTemplate8(context: TemplateContext): Promise<Uint8Ar
         });
         y -= headlineSize * 1.2;
       }
-      y -= 12;
+      y -= 4;
     } else {
-      y -= 12;
+      y -= 4;
     }
   }
   

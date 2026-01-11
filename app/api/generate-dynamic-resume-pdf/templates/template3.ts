@@ -338,11 +338,11 @@ export async function renderTemplate3(context: TemplateContext): Promise<Uint8Ar
       });
       nameY -= NAME_SIZE * 0.9;
     }
-    nameY -= 6;
+    
     
     // Headline (under name, left-aligned, medium gray)
     if (headline) {
-      const headlineSize = 10;
+      const headlineSize = 12;
       const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH);
       for (const line of headlineLines) {
         page.drawText(line, { 
@@ -362,7 +362,7 @@ export async function renderTemplate3(context: TemplateContext): Promise<Uint8Ar
   if (contactParts.length > 0) {
     const contactLine = contactParts.join('  |  ');
     const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    let contactY = PAGE_HEIGHT - 70;
+    let contactY = PAGE_HEIGHT - 80;
     for (const line of contactLines) {
       page.drawText(line, { 
         x: left, 

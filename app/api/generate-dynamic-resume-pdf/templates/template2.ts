@@ -538,11 +538,11 @@ export async function renderTemplate2(context: TemplateContext): Promise<Uint8Ar
       });
       y -= NAME_SIZE * 0.85;
     }
-    y -= 6;
+    y += 6;
     
     // Headline (under name, right-aligned, medium gray)
     if (headline) {
-      const headlineSize = 10;
+      const headlineSize = 12;
       const headlineLines = wrapText(headline, font, headlineSize, CONTENT_WIDTH * 0.6);
       for (const line of headlineLines) {
         const textWidth = font.widthOfTextAtSize(line, headlineSize);
