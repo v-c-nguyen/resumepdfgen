@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { name, resumeText, customPrompt, pdfTemplate } = await req.json();
+    const { name, resumeText, customPrompt, pdfTemplate, email, phoneNumber, fullAddress, linkedinUrl, jobDescription, logGenerations } = await req.json();
     
     if (!name || !resumeText) {
       return NextResponse.json(
@@ -59,7 +59,13 @@ export async function POST(req: NextRequest) {
         name,
         resumeText,
         customPrompt: customPrompt || null,
-        pdfTemplate: pdfTemplate || 1,
+        pdfTemplate: pdfTemplate ?? 1,
+        email: email || null,
+        phoneNumber: phoneNumber || null,
+        fullAddress: fullAddress || null,
+        linkedinUrl: linkedinUrl || null,
+        jobDescription: jobDescription || null,
+        logGenerations: logGenerations === true,
       },
     });
 
@@ -79,7 +85,7 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const { oldName, name, resumeText, customPrompt, pdfTemplate } = await req.json();
+    const { oldName, name, resumeText, customPrompt, pdfTemplate, email, phoneNumber, fullAddress, linkedinUrl, jobDescription, logGenerations } = await req.json();
     
     if (!oldName || !name || !resumeText) {
       return NextResponse.json(
@@ -120,7 +126,13 @@ export async function PUT(req: NextRequest) {
         name,
         resumeText,
         customPrompt: customPrompt || null,
-        pdfTemplate: pdfTemplate || 1,
+        pdfTemplate: pdfTemplate ?? 1,
+        email: email || null,
+        phoneNumber: phoneNumber || null,
+        fullAddress: fullAddress || null,
+        linkedinUrl: linkedinUrl || null,
+        jobDescription: jobDescription ?? null,
+        logGenerations: logGenerations === true,
       },
     });
 

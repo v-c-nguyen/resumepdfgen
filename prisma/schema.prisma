@@ -11,14 +11,31 @@ datasource db {
 }
 
 model Profile {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  resumeText  String   @db.Text
-  customPrompt String? @db.Text
-  pdfTemplate Int      @default(1)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String   @unique
+  resumeText   String   @db.Text
+  customPrompt String?  @db.Text
+  pdfTemplate  Int      @default(1)
+  email        String?
+  phoneNumber  String?
+  fullAddress  String?
+  linkedinUrl       String?
+  jobDescription    String?  @db.Text
+  logGenerations    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@map("profiles")
 }
 
+model ResumeGenerationLog {
+  id             String   @id @default(cuid())
+  profileName    String?
+  jobDescription String?  @db.Text
+  resumeText     String   @db.Text
+  company        String?
+  role           String?
+  createdAt      DateTime @default(now())
+
+  @@map("resume_generation_logs")
+}

@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { BaseResumeProfile } from '@/app/data/baseResumes';
+import { DEFAULT_RESUME_TEXT_TEMPLATE } from '@/app/data/defaultResumeTemplate';
+import { DEFAULT_PROMPT_TEMPLATE } from '@/app/utils/promptBuilder';
 
 interface ProfileEditorProps {
   profiles: BaseResumeProfile[];
@@ -26,41 +28,6 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-
-  // Default prompt template
-  const defaultPromptTemplate = `
-You are a technical resume assistant. Align the resume with the Job Description (JD) by REPLACING, REPHRASING, and ADDING bullet points to match JD keywords, skills, and technologies. Prioritize recent roles.
-
-CORE REQUIREMENTS:
-1. Keyword Match: Use exact JD technology/tool names. Cross-link skills (e.g., "React with TypeScript") for ATS scoring. Include all JD skills/ecosystems.
-2. Experience Bullets: 8-10 bullets per role (challenge → action → result format). Create new JD-aligned bullets if needed. Emphasize main JD tech stack in recent roles; distribute secondary technologies across earlier positions. Each bullet must describe a real system or outcome.
-3. Skills Section: Place after Summary, before Experience. List ALL technologies/tools from JD and candidate experience. Include related ecosystems (REST, GraphQL, CI/CD). Group by JD emphasis.
-4. Summary: Integrate high-priority JD skills/technologies, keep keyword-dense but natural.
-5. Quantification: Preserve original metrics. Add numbers/percentages to 75%+ of bullets. Prefer non-rounded percentages (33%, 47%, 92%).
-6. Verb Variety: No action verb (developed, led, built, etc.) more than twice. Never repeat verbs in adjacent bullets.
-7. Preserve: Company names, job titles, dates, section headers, and formatting exactly as original.
-
-STYLE & HUMANIZATION:
-- Natural, professional tone (like a senior engineer wrote it)
-- Vary phrasing between sections
-- Use JD keywords/phrasing where truthful
-- Storytelling bullets (impact/metrics over generic tasks)
-- No em dashes; use commas/semicolons/hyphens
-- Subtle domain context and idiomatic phrasing
-- Ensure realistic, contextually plausible content
-- Email should be plain text, not a hyperlink.
-
-OUTPUT:
-- Output ONLY plain text content. Do NOT generate PDF files, binary data, or any file formats.
-- Do NOT include PDF formatting, file headers, or any file structure.
-- Output ONLY the resume text content as markdown format
-- Match original format exactly. Include unchanged headline. Label sections clearly with original spacing/order.
-- No decorative lines, symbols, or commentary. Plain text only.
-- Do not ask questions regarding resume style. Follow the base resume style exactly.
-
-Base resume: \${baseResume}
-Job description: \${jobDescription}
-  `.trim();
 
   // Fetch templates on component mount
   useEffect(() => {
@@ -116,9 +83,15 @@ Job description: \${jobDescription}
   const handleCreate = () => {
     setEditingProfile({
       name: '',
-      resumeText: '',
+      resumeText: DEFAULT_RESUME_TEXT_TEMPLATE,
       customPrompt: undefined,
-      pdfTemplate: pdfTemplates.length > 0 ? pdfTemplates[0].value : 1
+      pdfTemplate: pdfTemplates.length > 0 ? pdfTemplates[0].value : 1,
+      email: '',
+      phoneNumber: '',
+      fullAddress: '',
+      linkedinUrl: '',
+      jobDescription: '',
+      logGenerations: false,
     });
     setIsCreating(true);
     setError('');
@@ -152,14 +125,26 @@ Job description: \${jobDescription}
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
             customPrompt: editingProfile.customPrompt || undefined,
-            pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)
+            pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1),
+            email: editingProfile.email || undefined,
+            phoneNumber: editingProfile.phoneNumber || undefined,
+            fullAddress: editingProfile.fullAddress || undefined,
+            linkedinUrl: editingProfile.linkedinUrl || undefined,
+            jobDescription: null,
+            logGenerations: editingProfile.logGenerations ?? false,
           }
         : {
             oldName: profiles.find(p => p.name === editingProfile.name)?.name || editingProfile.name,
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
             customPrompt: editingProfile.customPrompt || undefined,
-            pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1)
+            pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1),
+            email: editingProfile.email || undefined,
+            phoneNumber: editingProfile.phoneNumber || undefined,
+            fullAddress: editingProfile.fullAddress || undefined,
+            linkedinUrl: editingProfile.linkedinUrl || undefined,
+            jobDescription: editingProfile.jobDescription || undefined,
+            logGenerations: editingProfile.logGenerations ?? false,
           };
 
       const response = await fetch(url, {
@@ -231,7 +216,7 @@ Job description: \${jobDescription}
 
   // If editing, show the edit form
   if (editingProfile) {
-    const currentPrompt = editingProfile.customPrompt || defaultPromptTemplate;
+    const currentPrompt = editingProfile.customPrompt || DEFAULT_PROMPT_TEMPLATE;
 
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
@@ -284,6 +269,57 @@ Job description: \${jobDescription}
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={editingProfile.email ?? ''}
+                    onChange={(e) => setEditingProfile({ ...editingProfile, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone number
+                  </label>
+                  <input
+                    type="tel"
+                    value={editingProfile.phoneNumber ?? ''}
+                    onChange={(e) => setEditingProfile({ ...editingProfile, phoneNumber: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    placeholder="+1 234 567 8900"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full address
+                </label>
+                <input
+                  type="text"
+                  value={editingProfile.fullAddress ?? ''}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, fullAddress: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="City, State / Country"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  LinkedIn URL
+                </label>
+                <input
+                  type="url"
+                  value={editingProfile.linkedinUrl ?? ''}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, linkedinUrl: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="https://linkedin.com/in/username"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Resume Text *
@@ -295,6 +331,19 @@ Job description: \${jobDescription}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-gray-900"
                   placeholder="Paste the full resume text here..."
                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="log-generations"
+                  checked={editingProfile.logGenerations ?? false}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, logGenerations: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="log-generations" className="text-sm font-medium text-gray-700">
+                  Save job description and resume text when generating PDF (optional)
+                </label>
               </div>
             </div>
           </div>
@@ -453,7 +502,7 @@ Job description: \${jobDescription}
               onChange={(e) => {
                 const newPrompt = e.target.value;
                 // If user edits away from default, set as custom
-                if (newPrompt !== defaultPromptTemplate) {
+                if (newPrompt !== DEFAULT_PROMPT_TEMPLATE) {
                   setEditingProfile({ ...editingProfile, customPrompt: newPrompt });
                 } else {
                   setEditingProfile({ ...editingProfile, customPrompt: undefined });

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { BaseResumeProfile } from '@/app/data/baseResumes';
+import { DEFAULT_RESUME_TEXT_TEMPLATE } from '@/app/data/defaultResumeTemplate';
 
 interface ProfileManagerProps {
   profiles: BaseResumeProfile[];
@@ -17,8 +18,14 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
   const handleCreate = () => {
     setEditingProfile({
       name: '',
-      resumeText: '',
-      customPrompt: undefined
+      resumeText: DEFAULT_RESUME_TEXT_TEMPLATE,
+      customPrompt: undefined,
+      email: '',
+      phoneNumber: '',
+      fullAddress: '',
+      linkedinUrl: '',
+      jobDescription: '',
+      logGenerations: false,
     });
     setIsCreating(true);
     setError('');
@@ -48,13 +55,25 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
         ? {
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
-            customPrompt: editingProfile.customPrompt || undefined
+            customPrompt: editingProfile.customPrompt || undefined,
+            email: editingProfile.email || undefined,
+            phoneNumber: editingProfile.phoneNumber || undefined,
+            fullAddress: editingProfile.fullAddress || undefined,
+            linkedinUrl: editingProfile.linkedinUrl || undefined,
+            jobDescription: null,
+            logGenerations: editingProfile.logGenerations ?? false,
           }
         : {
             oldName: profiles.find(p => p.name === editingProfile.name)?.name || editingProfile.name,
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
-            customPrompt: editingProfile.customPrompt || undefined
+            customPrompt: editingProfile.customPrompt || undefined,
+            email: editingProfile.email || undefined,
+            phoneNumber: editingProfile.phoneNumber || undefined,
+            fullAddress: editingProfile.fullAddress || undefined,
+            linkedinUrl: editingProfile.linkedinUrl || undefined,
+            jobDescription: editingProfile.jobDescription || undefined,
+            logGenerations: editingProfile.logGenerations ?? false,
           };
 
       const response = await fetch(url, {
@@ -143,6 +162,57 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={editingProfile.email ?? ''}
+                onChange={(e) => setEditingProfile({ ...editingProfile, email: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                placeholder="email@example.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone number
+              </label>
+              <input
+                type="tel"
+                value={editingProfile.phoneNumber ?? ''}
+                onChange={(e) => setEditingProfile({ ...editingProfile, phoneNumber: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                placeholder="+1 234 567 8900"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full address
+            </label>
+            <input
+              type="text"
+              value={editingProfile.fullAddress ?? ''}
+              onChange={(e) => setEditingProfile({ ...editingProfile, fullAddress: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              placeholder="City, State / Country"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              LinkedIn URL
+            </label>
+            <input
+              type="url"
+              value={editingProfile.linkedinUrl ?? ''}
+              onChange={(e) => setEditingProfile({ ...editingProfile, linkedinUrl: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              placeholder="https://linkedin.com/in/username"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Resume Text *
@@ -154,6 +224,19 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-gray-900"
               placeholder="Paste the full resume text here..."
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="log-generations-pm"
+              checked={editingProfile.logGenerations ?? false}
+              onChange={(e) => setEditingProfile({ ...editingProfile, logGenerations: e.target.checked })}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="log-generations-pm" className="text-sm font-medium text-gray-700">
+              Save job description and resume text when generating PDF (optional)
+            </label>
           </div>
 
           <div className="flex gap-4">

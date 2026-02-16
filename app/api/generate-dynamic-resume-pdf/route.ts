@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OpenAI } from 'openai';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { prisma } from '@/lib/prisma';
 import { getBaseResumeByName } from '@/app/data/db';
-import { buildPrompt } from '@/app/utils/promptBuilder';
 import { parseResume, TemplateContext } from './utils';
 import { renderTemplate1 } from './templates/template1';
 import { renderTemplate2 } from './templates/template2';
@@ -66,10 +65,31 @@ export async function POST(req: NextRequest) {
   try {
     // 1. Parse form data
     const formData = await req.formData();
-    const jobDescription = formData.get('job_description') as string;
-    const company = formData.get('company') as string;
-    const role = formData.get('role') as string;
+    const jobDescription = formData.get('job_description') as string; // resume text used for PDF
+    const jdText = (formData.get('jd_text') as string) || ''; // job description from main page
+    const company = (formData.get('company') as string) || '';
+    const role = (formData.get('role') as string) || '';
     const baseResumeProfile = formData.get('base_resume_profile') as string | null;
+
+    // Load profile to check if logging is enabled for this profile
+    const profile = await getBaseResumeByName(baseResumeProfile);
+
+    // Save job description and resume text to log only when profile has logGenerations enabled
+    if (process.env.DATABASE_URL && profile?.logGenerations) {
+      try {
+        await prisma.resumeGenerationLog.create({
+          data: {
+            profileName: baseResumeProfile || null,
+            jobDescription: jdText.trim() || null,
+            resumeText: jobDescription,
+            company: company.trim() || null,
+            role: role.trim() || null,
+          },
+        });
+      } catch (logError) {
+        console.error('Failed to save generation log:', logError);
+      }
+    }
 
     // Validate required fields
     if (!jobDescription) {
@@ -79,34 +99,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check for OpenAI API key
-    if (!process.env.OPENAI_API_KEY) {
-      return new NextResponse(
-        JSON.stringify({ error: 'OpenAI API key not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 2. Load base resume based on selected profile, fallback to default embedded
-    const profile = await getBaseResumeByName(baseResumeProfile);
+    // 2. Use profile already loaded above for template selection
     // const baseResume: string = profile?.resumeText || ``;
     // const customPrompt = profile?.customPrompt;
     const pdfTemplate = profile?.pdfTemplate || 1;
 
-    // // 3. Tailor resume with OpenAI
-    // const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    // const prompt = buildPrompt(baseResume, jobDescription, customPrompt);
-
-    // const completion = await openai.chat.completions.create({
-    //   model: process.env.OPENAI_VERSION || 'gpt-3.5-turbo',
-    //   messages: [
-    //     { role: 'system', content: 'You are a helpful assistant for creating professional resume content.' },
-    //     { role: 'user', content: prompt }
-    //   ],
-    //   max_completion_tokens: 7000,
-    // });
-
-    // const tailoredResume = completion.choices[0].message.content || '';
     const tailoredResume = jobDescription;
 
     if (!tailoredResume) {

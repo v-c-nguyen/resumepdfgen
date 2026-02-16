@@ -22,6 +22,11 @@ export async function GET() {
         resumeText: true,
         customPrompt: true,
         pdfTemplate: true,
+        email: true,
+        phoneNumber: true,
+        fullAddress: true,
+        linkedinUrl: true,
+        jobDescription: true,
       },
     });
     return NextResponse.json({ profiles });

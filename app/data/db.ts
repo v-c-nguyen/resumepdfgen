@@ -12,6 +12,12 @@ export async function getBaseResumes(): Promise<BaseResumeProfile[]> {
     resumeText: profile.resumeText,
     customPrompt: profile.customPrompt || undefined,
     pdfTemplate: profile.pdfTemplate,
+    email: profile.email || undefined,
+    phoneNumber: profile.phoneNumber || undefined,
+    fullAddress: profile.fullAddress || undefined,
+    linkedinUrl: profile.linkedinUrl || undefined,
+    jobDescription: profile.jobDescription || undefined,
+    logGenerations: profile.logGenerations ?? false,
   }));
 }
 
@@ -30,6 +36,12 @@ export async function getBaseResumeByName(name: string | null | undefined): Prom
     resumeText: profile.resumeText,
     customPrompt: profile.customPrompt || undefined,
     pdfTemplate: profile.pdfTemplate,
+    email: profile.email || undefined,
+    phoneNumber: profile.phoneNumber || undefined,
+    fullAddress: profile.fullAddress || undefined,
+    linkedinUrl: profile.linkedinUrl || undefined,
+    jobDescription: profile.jobDescription || undefined,
+    logGenerations: profile.logGenerations ?? false,
   };
 }
 
