@@ -23,12 +23,31 @@ function isValidEmail(text: string): boolean {
 }
 
 function isValidPhone(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
   // Matches various phone formats:
   // +1 415 966 0362, +1-415-966-0362, (415) 966-0362, 415-966-0362, 415.966.0362, etc.
   const phoneRegex = /^[\+]?[\d\s\-\(\)\.]{10,}$/;
-  const cleaned = text.replace(/[\s\-\(\)\.]/g, '');
+  const cleaned = t.replace(/[\s\-\(\)\.]/g, '');
   // Should have at least 10 digits
-  return phoneRegex.test(text) && /\d{10,}/.test(cleaned);
+  return phoneRegex.test(t) && /\d{10,}/.test(cleaned);
+}
+
+/** Extract a phone substring from a line (e.g. "Phone: 415-966-0362" or segment from "a | 415-966-0362 | b"). */
+function extractPhoneFromLine(line: string): string | null {
+  const trimmed = line.trim();
+  // Label prefix: "Phone:", "phone:", "Tel:", "Mobile:", etc.
+  const withLabel = trimmed.replace(/^(phone|tel|mobile|cell|fax)\s*:\s*/i, '').trim();
+  if (withLabel !== trimmed && isValidPhone(withLabel)) return withLabel;
+  if (isValidPhone(trimmed)) return trimmed;
+  // Try to find a phone-like substring (e.g. in "Contact: 415-966-0362" or "Email | 415-966-0362 | City")
+  const phoneLike = trimmed.match(/[\+]?[\d\s\-\(\)\.]{10,}/g);
+  if (phoneLike) {
+    for (const part of phoneLike) {
+      if (isValidPhone(part)) return part.trim();
+    }
+  }
+  return null;
 }
 
 function isValidLinkedIn(text: string): boolean {
@@ -103,9 +122,22 @@ export function parseResume(resumeText: string): {
       continue;
     }
     
-    if (!result.phone && isValidPhone(line)) {
-      result.phone = line;
-      continue;
+    if (!result.phone) {
+      const extracted = extractPhoneFromLine(line);
+      if (extracted) {
+        result.phone = extracted;
+        continue;
+      }
+      // Composite line (e.g. "Email | City | 415-966-0362"): split by | and check each segment
+      if (line.includes('|')) {
+        for (const segment of line.split('|').map((s) => s.trim())) {
+          if (isValidPhone(segment)) {
+            result.phone = segment;
+            break;
+          }
+        }
+      }
+      if (result.phone) continue;
     }
     
     if (!result.linkedin && isValidLinkedIn(line)) {

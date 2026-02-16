@@ -13,8 +13,15 @@ import { renderTemplate7 } from './templates/template7';
 import { renderTemplate8 } from './templates/template8';
 import { renderTemplate9 } from './templates/template9';
 
+// Optional contact overrides (e.g. from profile) when resume text doesn't contain them
+type ContactOverrides = { phone?: string; email?: string; location?: string };
+
 // Template router - routes to appropriate template renderer
-async function generateResumePdf(resumeText: string, template: number = 1): Promise<Uint8Array> {
+async function generateResumePdf(
+  resumeText: string,
+  template: number = 1,
+  overrides?: ContactOverrides
+): Promise<Uint8Array> {
   const parsed = parseResume(resumeText);
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // A4
@@ -28,9 +35,9 @@ async function generateResumePdf(resumeText: string, template: number = 1): Prom
     fontBold,
     headline: parsed.headline,
     name: parsed.name,
-    email: parsed.email,
-    phone: parsed.phone,
-    location: parsed.location,
+    email: parsed.email || overrides?.email || '',
+    phone: parsed.phone || overrides?.phone || '',
+    location: parsed.location || overrides?.location || '',
     body: parsed.body,
     PAGE_WIDTH: 595,
     PAGE_HEIGHT: 842
@@ -113,8 +120,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Generate PDF with template
-    const pdfBytes = await generateResumePdf(tailoredResume, pdfTemplate);
+    // 4. Generate PDF with template (use profile contact fields as fallback if not in resume text)
+    const contactOverrides: ContactOverrides = {};
+    if (profile?.phoneNumber) contactOverrides.phone = profile.phoneNumber;
+    if (profile?.email) contactOverrides.email = profile.email;
+    if (profile?.fullAddress) contactOverrides.location = profile.fullAddress;
+    const pdfBytes = await generateResumePdf(tailoredResume, pdfTemplate, contactOverrides);
 
     // 5. Return PDF as responseconst sanitize = v => v.replace(/[^a-zA-Z0-9_]/g, '_');
     const sanitize = (v: string) => v.replace(/[^a-zA-Z0-9_]/g, '_');
