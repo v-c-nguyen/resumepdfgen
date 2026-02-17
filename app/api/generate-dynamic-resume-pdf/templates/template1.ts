@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER } from '../utils';
 
 // Template 1 Body Content Renderer - Elegant top accent bar design
 function renderBodyContentTemplate1(
@@ -172,8 +172,9 @@ function renderBodyContentTemplate1(
                                   (isTechnicalSkillsSection && colonIndex !== -1 && colonIndex < 50);
         
           if (isSkillsCategory) {
-          const bulletSymbol = '•';
-          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
+          const bulletSymbol = PDF_BULLET;
+          const bulletSize = bodySize * PDF_BULLET_SIZE_MULTIPLIER;
+          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bulletSize);
           
           const colonIndex = lineWithoutBullet.indexOf(':');
           if (colonIndex !== -1) {
@@ -204,7 +205,7 @@ function renderBodyContentTemplate1(
             context.page.drawText(bulletSymbol, { 
               x: currentX, 
               y, 
-              size: bodySize, 
+              size: bulletSize, 
               font, 
               color: BLACK 
             });
@@ -256,8 +257,9 @@ function renderBodyContentTemplate1(
           } else {
             // For experience bullets and other content, add bullets if needed
             const hasBullet = /^[\-\·•]\s/.test(line);
-            const bulletSymbol = '•';
-            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
+            const bulletSymbol = PDF_BULLET;
+            const bulletSize = bodySize * PDF_BULLET_SIZE_MULTIPLIER;
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bulletSize);
             
             let textToWrap = line;
             if (!hasBullet) {
@@ -293,7 +295,7 @@ function renderBodyContentTemplate1(
                   context.page.drawText(bulletChar, {
                     x: bulletX,
                     y,
-                    size: bodySize,
+                    size: bulletSize,
                     font,
                     color: BLACK
                   });

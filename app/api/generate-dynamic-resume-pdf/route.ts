@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { prisma } from '@/lib/prisma';
 import { getBaseResumeByName } from '@/app/data/db';
-import { parseResume, TemplateContext } from './utils';
+import { parseResume, sanitizeForPdfText, TemplateContext } from './utils';
 import { renderTemplate1 } from './templates/template1';
 import { renderTemplate2 } from './templates/template2';
 import { renderTemplate3 } from './templates/template3';
@@ -15,6 +15,21 @@ import { renderTemplate9 } from './templates/template9';
 
 // Optional contact overrides (e.g. from profile) when resume text doesn't contain them
 type ContactOverrides = { phone?: string; email?: string; location?: string };
+
+// Prisma client type including ResumeGenerationLog (avoids TS error if client was generated before model existed)
+type PrismaWithResumeLog = typeof prisma & {
+  resumeGenerationLog: {
+    create: (args: {
+      data: {
+        profileName: string | null;
+        jobDescription: string | null;
+        resumeText: string;
+        company: string | null;
+        role: string | null;
+      };
+    }) => Promise<unknown>;
+  };
+};
 
 // Template router - routes to appropriate template renderer
 async function generateResumePdf(
@@ -84,7 +99,7 @@ export async function POST(req: NextRequest) {
     // Save job description and resume text to log only when profile has logGenerations enabled
     if (process.env.DATABASE_URL && profile?.logGenerations) {
       try {
-        await prisma.resumeGenerationLog.create({
+        await (prisma as PrismaWithResumeLog).resumeGenerationLog.create({
           data: {
             profileName: baseResumeProfile || null,
             jobDescription: jdText.trim() || null,
@@ -122,9 +137,9 @@ export async function POST(req: NextRequest) {
 
     // 4. Generate PDF with template (use profile contact fields as fallback if not in resume text)
     const contactOverrides: ContactOverrides = {};
-    if (profile?.phoneNumber) contactOverrides.phone = profile.phoneNumber;
-    if (profile?.email) contactOverrides.email = profile.email;
-    if (profile?.fullAddress) contactOverrides.location = profile.fullAddress;
+    if (profile?.phoneNumber) contactOverrides.phone = sanitizeForPdfText(profile.phoneNumber);
+    if (profile?.email) contactOverrides.email = sanitizeForPdfText(profile.email);
+    if (profile?.fullAddress) contactOverrides.location = sanitizeForPdfText(profile.fullAddress);
     const pdfBytes = await generateResumePdf(tailoredResume, pdfTemplate, contactOverrides);
 
     // 5. Return PDF as responseconst sanitize = v => v.replace(/[^a-zA-Z0-9_]/g, '_');

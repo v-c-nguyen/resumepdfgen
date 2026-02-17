@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER } from '../utils';
 
 // Template 6 Body Content Renderer - Modern style with left accent bar
 function renderBodyContentTemplate3(
@@ -177,8 +177,9 @@ function renderBodyContentTemplate3(
           
           if (isSkillsCategory && colonIndex !== -1) {
             // Split category name and skills text, render category name in bold
-            const bulletSymbol = '•';
-            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
+            const bulletSymbol = PDF_BULLET;
+            const bulletSize = bodySize * PDF_BULLET_SIZE_MULTIPLIER;
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bulletSize);
             
             const categoryName = lineWithoutBullet.substring(0, colonIndex + 1).trim();
             const skillsText = lineWithoutBullet.substring(colonIndex + 1).trim();
@@ -206,7 +207,7 @@ function renderBodyContentTemplate3(
             context.page.drawText(bulletSymbol, { 
               x: currentX, 
               y, 
-              size: bodySize, 
+              size: bulletSize, 
               font, 
               color: BLACK 
             });
@@ -256,8 +257,9 @@ function renderBodyContentTemplate3(
           } else {
             // For experience bullets and other content, add bullets if needed
             const hasBullet = /^[\-\·•]\s/.test(line);
-            const bulletSymbol = '•';
-            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
+            const bulletSymbol = PDF_BULLET;
+            const bulletSize = bodySize * PDF_BULLET_SIZE_MULTIPLIER;
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bulletSize);
             
             let textToWrap = line;
             if (!hasBullet) {
@@ -292,7 +294,7 @@ function renderBodyContentTemplate3(
                   context.page.drawText(bulletChar, {
                     x: bulletX,
                     y,
-                    size: bodySize,
+                    size: bulletSize,
                     font,
                     color: BLACK
                   });

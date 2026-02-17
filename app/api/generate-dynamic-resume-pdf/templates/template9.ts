@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET } from '../utils';
 
 // Template 9 Body Content Renderer - Modern design with balanced layout
 function renderBodyContentTemplate9(
@@ -139,7 +139,7 @@ function renderBodyContentTemplate9(
                                   (isTechnicalSkillsSection && colonIndex !== -1 && colonIndex < 50);
         
           if (isSkillsCategory) {
-          const bulletSymbol = '•';
+          const bulletSymbol = PDF_BULLET;
           const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
           
           const colonIndex = lineWithoutBullet.indexOf(':');
@@ -207,7 +207,7 @@ function renderBodyContentTemplate9(
           } else {
             // For experience bullets and other content, add bullets if needed
             const hasBullet = /^[\-\·•]\s/.test(line);
-            const bulletSymbol = '•';
+            const bulletSymbol = PDF_BULLET;
             const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
             
             let textToWrap = line;

@@ -65,6 +65,22 @@ function isValidLocation(text: string): boolean {
   return /^[a-zA-Z\s,\-]+$/.test(text.trim()) && text.trim().length > 2;
 }
 
+/**
+ * Sanitize string for PDF WinAnsi encoding. Standard fonts (Helvetica, etc.) only support
+ * WinAnsi (Latin-1–like). Removes Unicode format/control chars (e.g. U+202A LEFT-TO-RIGHT
+ * EMBEDDING) and replaces or strips others that would cause "WinAnsi cannot encode" errors.
+ */
+export function sanitizeForPdfText(str: string): string {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/[\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069]/g, '') // bidirectional/format controls
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\u2013|\u2014/g, '-')
+    .replace(/\u2022/g, '\u00B7') // bullet • → middle dot · (in WinAnsi)
+    .replace(/[^\x00-\xFF]/g, ''); // remove any remaining non–Latin-1
+}
+
 // Helper to parse resume text with validation
 export function parseResume(resumeText: string): {
   headline: string;
@@ -178,6 +194,16 @@ export function parseResume(resumeText: string): {
   }
   
   result.body = lines.slice(bodyStart).join('\n');
+
+  // Sanitize all fields for PDF WinAnsi encoding (avoids "WinAnsi cannot encode" errors)
+  result.headline = sanitizeForPdfText(result.headline);
+  result.name = sanitizeForPdfText(result.name);
+  result.email = sanitizeForPdfText(result.email);
+  result.phone = sanitizeForPdfText(result.phone);
+  result.location = sanitizeForPdfText(result.location);
+  result.linkedin = sanitizeForPdfText(result.linkedin);
+  result.body = sanitizeForPdfText(result.body);
+
   return result;
 }
 
@@ -212,7 +238,8 @@ export function formatDate(dateStr: string): string {
 
 // Helper to wrap text within a max width
 export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const words = text.split(' ');
+  const safe = sanitizeForPdfText(text);
+  const words = safe.split(' ');
   const lines: string[] = [];
   let currentLine = '';
   for (let i = 0; i < words.length; i++) {
@@ -278,8 +305,8 @@ export function drawTextWithBold(
   size: number,
   color: RGB
 ) {
-  // Split by ** for bold
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const safe = sanitizeForPdfText(text);
+  const parts = safe.split(/(\*\*[^*]+\*\*)/g);
   let offsetX = x;
   for (const part of parts) {
     if (part.startsWith('**') && part.endsWith('**')) {
@@ -292,6 +319,12 @@ export function drawTextWithBold(
     }
   }
 }
+
+/** WinAnsi-safe bullet for PDF (middle dot ·). Use instead of Unicode • to avoid encoding errors. */
+export const PDF_BULLET = '\u00B7';
+
+/** Slight size multiplier to make bullets visually a bit larger than body text. */
+export const PDF_BULLET_SIZE_MULTIPLIER = 1.5;
 
 // Color constants
 export const COLORS = {

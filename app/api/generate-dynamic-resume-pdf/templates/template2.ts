@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER } from '../utils';
 
 // Template 2 Body Content Renderer - Structured style with top/bottom borders
 function renderBodyContentTemplate2(
@@ -250,8 +250,9 @@ function renderBodyContentTemplate2(
         
           if (isSkillsCategory) {
           // Keep the bullet/dot prefix
-          const bulletSymbol = '•';
-          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
+          const bulletSymbol = PDF_BULLET;
+          const bulletSize = bodySize * PDF_BULLET_SIZE_MULTIPLIER;
+          const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bulletSize);
           
           // Extract category name (part before colon) and skills (part after colon)
           const colonIndex = lineWithoutBullet.indexOf(':');
@@ -293,7 +294,7 @@ function renderBodyContentTemplate2(
             context.page.drawText(bulletSymbol, { 
               x: currentX, 
               y, 
-              size: bodySize, 
+              size: bulletSize, 
               font, 
               color: BLACK 
             });
@@ -413,8 +414,9 @@ function renderBodyContentTemplate2(
             // Experience section bullets - ensure visible dot and proper formatting
             // Check if line already has a bullet
             const hasBullet = /^[\-\·•]\s/.test(line);
-            const bulletSymbol = '•';
-            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bodySize);
+            const bulletSymbol = PDF_BULLET;
+            const bulletSize = bodySize * PDF_BULLET_SIZE_MULTIPLIER;
+            const bulletWidth = font.widthOfTextAtSize(bulletSymbol + '   ', bulletSize);
             
             let textToWrap = line;
             if (!hasBullet) {
@@ -459,7 +461,7 @@ function renderBodyContentTemplate2(
                   context.page.drawText(bulletChar, {
                     x: bulletX,
                     y,
-                    size: bodySize,
+                    size: bulletSize,
                     font,
                     color: BLACK
                   });
