@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Copy, Check, Mail, Phone, MapPin, Linkedin, Sparkles, FileDown } from 'lucide-react';
 import { BaseResumeProfile } from './data/baseResumes';
-import { DEFAULT_PROMPT_TEMPLATE } from './utils/promptBuilder';
+import { buildPrompt } from './utils/promptBuilder';
 
 const btnMotion = 'transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]';
 
@@ -53,11 +53,7 @@ export default function Home() {
   const handleGeneratePromptWithJobDescription = async () => {
     const profileData = selectedProfile?.resumeText?.trim() || '[Paste profile/resume data here]';
     const jobDesc = jobDescriptionForPrompt.trim() || '[Paste job description here]';
-    const jobDescWrapped = `{${jobDesc}}`;
-    const promptText = DEFAULT_PROMPT_TEMPLATE.replace(/\$\{profileData\}/g, profileData).replace(
-      /\$\{jobDescription\}/g,
-      jobDescWrapped
-    );
+    const promptText = buildPrompt(profileData, jobDesc, selectedProfile?.customPrompt);
     try {
       await navigator.clipboard.writeText(promptText);
       setPromptCopied(true);
