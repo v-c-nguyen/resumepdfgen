@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, wrapSkillsAfterCategory } from '../utils';
 
 // Template 9 Body Content Renderer - Modern design with balanced layout
 function renderBodyContentTemplate9(
@@ -149,9 +149,15 @@ function renderBodyContentTemplate9(
             
             const categoryWidth = fontBold.widthOfTextAtSize(categoryName, bodySize);
             const spaceWidth = font.widthOfTextAtSize(' ', bodySize);
-            const skillsAvailableWidth = contentWidth - 20 - bulletWidth - categoryWidth - spaceWidth;
-            
-            const wrappedSkills = wrapText(skillsText, font, bodySize, skillsAvailableWidth);
+            const wrappedSkills = wrapSkillsAfterCategory(skillsText, font, bodySize, {
+              left,
+              bodyInsetLeft: 15,
+              contentWidth,
+              bodyInnerSubtract: 20,
+              bulletWidth,
+              categoryWidth,
+              spaceWidth,
+            });
             
             let currentX = left + 15;
             

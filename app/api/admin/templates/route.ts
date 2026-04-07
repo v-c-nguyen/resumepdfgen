@@ -32,9 +32,9 @@ export async function GET(req: NextRequest) {
 
     // Create a map of template number to count
     const countMap = new Map<number, number>();
-    profileCounts.forEach((item) => {
+    for (const item of profileCounts) {
       countMap.set(item.pdfTemplate, item._count.pdfTemplate);
-    });
+    }
     
     // Filter and extract template numbers from filenames (e.g., template2.ts -> 2)
     const templates = files

@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Path relative to this file — avoids resolving `tailwindcss` from a parent workspace folder (e.g. C:\dev). */
+@import "../node_modules/tailwindcss/index.css";
 
 :root {
   --background: #fafafa;

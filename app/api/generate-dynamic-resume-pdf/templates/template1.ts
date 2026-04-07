@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
 
 // Template 1 Body Content Renderer - Elegant top accent bar design
 function renderBodyContentTemplate1(
@@ -183,9 +183,15 @@ function renderBodyContentTemplate1(
             
             const categoryWidth = fontBold.widthOfTextAtSize(categoryName, bodySize);
             const spaceWidth = font.widthOfTextAtSize(' ', bodySize);
-            const skillsAvailableWidth = contentWidth - 20 - bulletWidth - categoryWidth - spaceWidth;
-            
-            const wrappedSkills = wrapText(skillsText, font, bodySize, skillsAvailableWidth);
+            const wrappedSkills = wrapSkillsAfterCategory(skillsText, font, bodySize, {
+              left,
+              bodyInsetLeft: 15,
+              contentWidth,
+              bodyInnerSubtract: 20,
+              bulletWidth,
+              categoryWidth,
+              spaceWidth,
+            });
             
             let currentX = left + 15;
             

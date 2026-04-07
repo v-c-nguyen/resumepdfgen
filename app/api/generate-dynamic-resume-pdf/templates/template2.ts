@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
 
 // Template 2 Body Content Renderer - Structured style with top/bottom borders
 function renderBodyContentTemplate2(
@@ -263,10 +263,15 @@ function renderBodyContentTemplate2(
             // Calculate available width for skills (after category name and bullet)
             const categoryWidth = fontBold.widthOfTextAtSize(categoryName, bodySize);
             const spaceWidth = font.widthOfTextAtSize(' ', bodySize);
-            const skillsAvailableWidth = contentWidth - 20 - bulletWidth - categoryWidth - spaceWidth;
-            
-            // Wrap skills text
-            const wrappedSkills = wrapText(skillsText, font, bodySize, skillsAvailableWidth);
+            const wrappedSkills = wrapSkillsAfterCategory(skillsText, font, bodySize, {
+              left,
+              bodyInsetLeft: 20,
+              contentWidth,
+              bodyInnerSubtract: 20,
+              bulletWidth,
+              categoryWidth,
+              spaceWidth,
+            });
             
             // Draw bullet dot, category name in bold, and skills on same/next lines
             let currentX = left + 20;

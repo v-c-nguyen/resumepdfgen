@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
 
 // Template 7 Body Content Renderer - Minimalist with geometric shapes
 function renderBodyContentTemplate7(
@@ -167,9 +167,15 @@ function renderBodyContentTemplate7(
             
             const categoryWidth = fontBold.widthOfTextAtSize(categoryName, bodySize);
             const spaceWidth = font.widthOfTextAtSize(' ', bodySize);
-            const skillsAvailableWidth = contentWidth - 20 - bulletWidth - categoryWidth - spaceWidth;
-            
-            const wrappedSkills = wrapText(skillsText, font, bodySize, skillsAvailableWidth);
+            const wrappedSkills = wrapSkillsAfterCategory(skillsText, font, bodySize, {
+              left,
+              bodyInsetLeft: 20,
+              contentWidth,
+              bodyInnerSubtract: 20,
+              bulletWidth,
+              categoryWidth,
+              spaceWidth,
+            });
             
             let currentX = left + 20;
             

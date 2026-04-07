@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, wrapSkillsAfterCategory } from '../utils';
 
 // Template 8 Body Content Renderer - Classic bordered frame
 function renderBodyContentTemplate8(
@@ -201,9 +201,15 @@ function renderBodyContentTemplate8(
             
             const categoryWidth = fontBold.widthOfTextAtSize(categoryName, bodySize);
             const spaceWidth = font.widthOfTextAtSize(' ', bodySize);
-            const skillsAvailableWidth = contentWidth - 20 - bulletWidth - categoryWidth - spaceWidth;
-            
-            const wrappedSkills = wrapText(skillsText, font, bodySize, skillsAvailableWidth);
+            const wrappedSkills = wrapSkillsAfterCategory(skillsText, font, bodySize, {
+              left,
+              bodyInsetLeft: 20,
+              contentWidth,
+              bodyInnerSubtract: 20,
+              bulletWidth,
+              categoryWidth,
+              spaceWidth,
+            });
             
             let currentX = left + 20;
             

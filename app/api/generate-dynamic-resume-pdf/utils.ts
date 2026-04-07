@@ -239,7 +239,7 @@ export function formatDate(dateStr: string): string {
 // Helper to wrap text within a max width
 export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const safe = sanitizeForPdfText(text);
-  const words = safe.split(' ');
+  const words = safe.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let currentLine = '';
   for (let i = 0; i < words.length; i++) {
@@ -254,6 +254,86 @@ export function wrapText(text: string, font: PDFFont, size: number, maxWidth: nu
   }
   if (currentLine) lines.push(currentLine);
   return lines;
+}
+
+/**
+ * Slack so skills lines do not wrap when widthOfTextAtSize is slightly stricter than visible fit
+ * (e.g. after a bold category prefix on the same row).
+ */
+export const PDF_SKILLS_WRAP_TOLERANCE_PT = 2.5;
+
+/**
+ * Word wrap with a narrower first line and wider continuation lines (skills share row with label).
+ */
+export function wrapTextWithLineWidths(
+  text: string,
+  font: PDFFont,
+  size: number,
+  firstLineMaxWidth: number,
+  continuationMaxWidth: number,
+  tolerancePt: number = PDF_SKILLS_WRAP_TOLERANCE_PT
+): string[] {
+  const safe = sanitizeForPdfText(text);
+  const words = safe.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let currentLine = '';
+  let lineIndex = 0;
+
+  const widthLimit = (idx: number) =>
+    (idx === 0 ? firstLineMaxWidth : continuationMaxWidth) + tolerancePt;
+
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + ' ' + word : word;
+    const testWidth = font.widthOfTextAtSize(testLine, size);
+    if (testWidth <= widthLimit(lineIndex) || !currentLine) {
+      currentLine = testLine;
+    } else {
+      lines.push(currentLine);
+      lineIndex++;
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
+
+/** Wrap skills text after "Category:" using the same geometry as draw positions. */
+export function wrapSkillsAfterCategory(
+  skillsText: string,
+  font: PDFFont,
+  bodySize: number,
+  layout: {
+    left: number;
+    bodyInsetLeft: number;
+    contentWidth: number;
+    bodyInnerSubtract: number;
+    bulletWidth: number;
+    categoryWidth: number;
+    spaceWidth: number;
+  }
+): string[] {
+  const {
+    left,
+    bodyInsetLeft,
+    contentWidth,
+    bodyInnerSubtract,
+    bulletWidth,
+    categoryWidth,
+    spaceWidth,
+  } = layout;
+  const bodyTextRight = left + bodyInsetLeft + (contentWidth - bodyInnerSubtract);
+  const skillsFirstLineStartX =
+    left + bodyInsetLeft + bulletWidth + categoryWidth + spaceWidth;
+  const firstLineWidth = bodyTextRight - skillsFirstLineStartX;
+  const continuationStartX = left + bodyInsetLeft + bulletWidth;
+  const continuationWidth = bodyTextRight - continuationStartX;
+  return wrapTextWithLineWidths(
+    skillsText,
+    font,
+    bodySize,
+    firstLineWidth,
+    continuationWidth
+  );
 }
 
 // Helper to wrap text with proper indentation for lines starting with prefixes (like '- ' or '· ')
