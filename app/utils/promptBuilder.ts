@@ -1,19 +1,54 @@
 /**
  * Default prompt template used when building prompts with a job description.
- * Placeholders: ${profileData} (resume text from selected profile) and ${jobDescription}
+ * Placeholders: ${profileData}, ${jobDescription}, ${targetTitle}
  */
 export const DEFAULT_PROMPT_TEMPLATE = `
-You are a world-class ATS optimization expert. Create a resume that scores 95–100% on ATS.
+You are a deterministic ATS resume generation engine.
 
-🚨 CRITICAL OUTPUT:
-Return ONLY a clean, professional resume in **Markdown** inside a fenced code block labeled 'markdown' so that a "Copy code" button appears in editors like GitHub, GitLab, or VSCode.
-- Use the **exact format shown below** (do not add extra lines, separators, or JSON formatting).
-- Do NOT include explanations, comments, or any text outside the resume.
+Return ONLY a Markdown resume inside a single code block labeled \`markdown\`.
 
-### Required Markdown Format:
-- Use this exact Markdown style:
+Do NOT output explanations, reasoning, or extra text.
+
+---
+
+## INPUTS
+
+PROFILE:
+\${profileData}
+
+JOB DESCRIPTION:
+\${jobDescription}
+
+TARGET TITLE (DO NOT MODIFY):
+\${targetTitle}
+
+---
+
+## TITLE CONTROL (STRICT)
+
+Resume headline MUST be exactly:
+→ \${targetTitle}
+
+- Do NOT generate, modify, or infer title
+- JD only influences content, NOT identity
+- Summary must reflect the same role context
+- Experience titles remain unchanged from profile data
+
+---
+
+## INTERNAL PROCESS (DO NOT OUTPUT)
+
+- Extract JD keywords (primary, secondary, domain)
+- Infer industry from JD
+- Map JD into Summary, Skills, Experience
+- Embed 1–2 system-level initiatives in recent roles (no project section)
+
+---
+
+## OUTPUT FORMAT
+
 '''markdown
-[Job Title from JD]
+[TARGET TITLE]
 [Candidate Name]
 
 [Email]
@@ -21,194 +56,203 @@ Return ONLY a clean, professional resume in **Markdown** inside a fenced code bl
 [Location]
 
 Summary:
-[5–6 line professional summary with domain and JD keywords]
+[5–6 sentence single paragraph]
 
 Technical Skills:
 • Category: Skill, Skill, Skill
-• Category: Skill, Skill, Skill
 
 Experience:
-[Job Title] at [Company] : [Start Date] – [End Date]
-• Bullet
-• Bullet
-
-[Job Title] at [Company] : [Start Date] – [End Date]
-• Bullet
+[Role] at [Company] : [Start – End]
 • Bullet
 
 Education:
 [Degree] | [Institution] | [Year]
+'''
 
 ---
 
-## PROFILE DATA: \${profileData}
-—
-## INSTRUCTIONS:
+## SUMMARY
 
-### 1. EXTRACT DOMAIN KEYWORDS (Critical for high ATS score)
+- 5 sentences, single paragraph
+- Include: role context, experience, key technologies, industry alignment,
+  system impact, scalability/reliability, collaboration, business value
 
-Analyze the JD "About Us" and product sections to extract 10–15 domain or compliance keywords specific to the company’s industry.
+---
+
+## TECHNICAL SKILLS
+
+- 6–7 categories
+- ≥ 8 skills per category, ≥ 50 total
+- 50–65% JD keywords
+- no repetitive categories
+- Include testing, CI/CD, and observability when relevant
+
+---
+
+## EXPERIENCE (STRICT)
+
+Generate exactly \${profileData.experience.length} roles.
+
+Per role:
+- recent roles: 7–8 bullets
+- older roles: 5–6 bullets
+
+Each bullet MUST:
+- follow: Action + Technology + System + Business Impact (+ metric if meaningful)
+- be 20–40 words, detailed, and natural (no short or fragmented bullets)
+- be a complete sentence and end with a period (.)
+
+---
+
+## SYSTEMS THINKING & OWNERSHIP
+
+Each role must show:
+- ownership of systems/services (not tasks)
+- end-to-end responsibility
+- architecture/design decisions
+- scalability, reliability, performance awareness
+
+Include 2–3 system-level bullets per role.
+
+---
+
+## BUSINESS IMPACT
+
+Every role must connect work to business value:
+- revenue, user growth, engagement, efficiency, cost, SLA, or product impact
+
+Do NOT stop at technical improvements — explain why it matters.
+
+---
+
+## METRICS BALANCE (CRITICAL)
+
+Each role MUST include:
+- at least 2–3 metric-driven bullets
+
+Limit:
+- ≤ 40% of bullets may include metrics
+
+Use metrics for:
+- performance, scale, cost, reliability, growth
+
+Avoid metrics for:
+- architecture, ownership, collaboration
+
+Metrics must:
+- be realistic and varied (%, counts, scale like “50K users”, “10M events/day”)
+- include context (system size, users, traffic)
+
+---
+
+## INDUSTRY ALIGNMENT (DYNAMIC)
+
+Infer industry from JD using product, users, and business model.
+
+Reference examples:
+FinTech, Healthcare, Security, SaaS, Data, E-commerce, AdTech, EdTech, Logistics,
+Travel, Gaming, Automotive, HR Tech, Insurance, Enterprise Software
 
 Rules:
-- Only extract keywords explicitly present or clearly implied in the JD
-- Do NOT invent regulations, certifications, or compliance frameworks
-- Prefer exact phrases used by the employer
+- Recent roles must reflect inferred industry
+- Use domain-specific terminology
+- Business impact must match industry context
 
-Examples by domain:
-- Identity/Security: passwordless authentication, zero-trust architecture, OAuth2, JWT, SAML, OpenID Connect, WebAuthn, FIDO2, MFA, SSO, encryption, SOC 2, ISO 27001
-- Payments/FinTech: PCI-DSS compliance, payment processing, fraud detection, KYC/AML, tokenization, ACH transfers, reconciliation
-- Healthcare: HIPAA compliance, HL7, FHIR, PHI protection, EHR systems, Epic integration, Cerner
-- Data/Analytics: data warehousing, data governance, Snowflake, data lake, GDPR compliance, PII protection
-- Do NOT ask me questions. Do NOT output intermediate steps. Infer everything silently.
-
-WHERE TO USE:
-- Summary: 3–5 domain keywords
-- Skills: Dedicated domain category with 8–15 keywords
-- Experience: Distribute naturally across bullets per role
+Do NOT force-fit into any category.
 
 ---
 
-### 2. TITLE
+## ATS KEYWORD PRECISION
 
-Generate a clean, standard industry resume headline that reflects the role described in the Job Description, **but never copy the JD title exactly**.
+Ensure JD-critical tools appear across Skills and Experience:
+- Frontend: React, TypeScript
+- Backend: Node.js, APIs, frameworks
+- Cloud: AWS, GCP, Azure
+- Integrations: APIs, third-party systems (ERP, payments, etc.)
+- Data: pipelines, warehousing (e.g., Snowflake)
 
-Rules:
-- Use a natural, widely recognized title (e.g., Senior Software Engineer, Senior Full Stack Engineer, Senior AI Engineer, Senior ML Engineer,Senior Backend Engineer, Senior QA Engineer).
-- Standardize or simplify the JD title by removing modifiers such as “Lead”, “Principal”, “Staff”, “Applied”, “Specialist”, “I/II/III”, “Seniority codes”, or uncommon descriptors.
-- If the JD title is overly specific or niche, generalize it into a common industry equivalent.
-- Ensure the headline matches the JD’s domain and responsibilities, but is **not identical in wording**.
-- Avoid adding seniority that is not clearly supported by the JD.
-- Avoid generating titles with company-specific or product-specific language.
-
-Examples (do NOT output examples in the resume):
-- “Applied AI Engineer” → Senior AI Engineer  
-- “Machine Learning Specialist” → Senior Machine Learning Engineer  
-- “Full Stack Engineer II” → Senior Full Stack Engineer  
-- “Backend API Developer” → Senior Backend Engineer  
-- “Senior Staff Software Developer” → Senior Software Engineer  
-
----
-### 3.  PERSONAL INFORMATION RULES (CRITICAL)
-- Use **only** the personal details provided in **PROFILE DATA**.
-- If a field is missing or blank, **omit it entirely**. Do not create, guess, or infer any missing information.
-- Do not fabricate emails, phone numbers, locations, or formatting variations.
-- Output the candidate’s name, email, phone, and location **exactly as provided** and only if they exist.
-
-Examples (do not output examples in the resume):
-- Missing phone → no phone line  
-- Missing location → no location line
+Always include:
+- testing frameworks
+- CI/CD tools
+- observability tools
 
 ---
 
-### 3. SUMMARY (5–6 lines)
+## EXPERIENCE INTEGRATION (NO PROJECT SECTION)
 
-Include 8–12 JD keywords and 3–5 domain keywords total.
-
-Formatting Rules (STRICT):
-- Write the entire summary on **one single line**
-- Use **5–6 full sentences**
-- Separate sentences using **a single space only**
-- Do NOT insert line breaks or bullet points
-- Do NOT use semicolons to replace sentence structure
-
-Structure:
-- Line 1: JD title with \${yearsOfExperience}+ years in JD domain
-- Line 2: Expertise in 1–2 domain areas + 3–4 exact JD technologies
-- Line 3: Proven impact with 1 domain keyword and a measurable outcome
-- Line 4: Proficiency in additional JD tools or methodologies
-- Line 5: Soft skill from JD + collaboration or Agile context
-- Line 6: Focus on scalability, reliability, or business outcomes
+- Do NOT create a “Project” section
+- Do NOT label bullets as projects
+- Embed system initiatives naturally within roles
+- Include system purpose, architecture, scale, and business impact
 
 ---
 
-### 4. SKILLS
+## RECRUITER & CULTURE FIT
 
-Total skills by seniority:
-- Junior/Mid: 40–55
-- Senior: 55–70
-- Staff/Principal: 50–65 (favor depth over breadth)
-
-Rules:
-- 6–7 categories aligned to JD focus
-- 8–12 skills per category
-- Capitalize first letter of each skill
-- No version spam
-- Group cloud services (e.g., AWS (Lambda, S3, EC2))
-- 70% JD keywords, 30% complementary skills
-- Categories must be technically correct
-
-Create domain-specific category when relevant:
-- FinTech → Payment & Compliance
-- Healthcare → Healthcare Compliance & Standards
-- Security → Security & Identity
-- Data → Data Governance & Compliance
+Include naturally:
+- cross-functional collaboration
+- ownership mindset
+- product thinking
+- communication and accountability
 
 ---
 
-### 5. EXPERIENCE (\${profileData.experience.length} roles)
+## FINAL RULE
 
-Requirements:
-- Generate exactly \${profileData.experience.length} roles
-- Most recent roles: 7–8 bullets
-- Older roles: 5–6 bullets
-- 20–40 words per bullet
-- At least 60–70% of bullets must include a metric
-- Prefer non-rounded percentages (33%, 47%, 92%).
-- Remaining bullets should emphasize scope, ownership, architecture, or leadership
-- Across each role, include 8–12 unique JD keywords total
-- Do NOT force multiple JD keywords into a single bullet if it reduces readability
-- Ensure all technologies listed were realistically available during that role’s timeframe
-- Add industry context to 2–3 bullets per role
-
-Bullet structure:
-[Action Verb] + [JD technology] + [what was built] + [business impact] + [metric if applicable]
-
-Use strong action verbs:
-Architected, Engineered, Designed, Built, Developed, Implemented, Optimized, Enhanced, Led, Automated, Deployed
-
-Avoid:
-Responsible for, Worked on, Tasked with
-
-If employer industry is unknown, default to JD company’s industry or “SaaS platform”.
-
----
-
-### ATS OPTIMIZATION CHECKLIST
-
-- Use EXACT JD phrases (no synonyms)
-- High-priority keywords appear 3–4 times across Summary, Skills, and Experience
-- All required and preferred JD skills appear in Skills
-- No duplicated bullets or near-identical bullet structures across roles
-- No repeated metric phrasing
-- Natural, human-written tone (not robotic)
-- Do NOT fabricate leadership scope or people management
-- If JD is vague, infer responsibilities only when consistent with candidate’s experience
-
----
-
-Return ONLY a clean, professional resume in **Markdown** inside a fenced code block labeled 'markdown' so that a "Copy code" button appears in editors like GitHub, GitLab, or VSCode.
-
-## JOB DESCRIPTION: \${jobDescription}
+Return ONLY the Markdown resume.
+No extra text.
 `.trim();
+
+const DEFAULT_TARGET_TITLE = 'Senior Software Engineer';
+
+/** Plain-text resume has no `.experience`; approximate role count for the prompt. */
+function experienceCountFromResumeText(resumeText: string): number {
+  const lines = resumeText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const roleLike = lines.filter(
+    (l) => /\bat\b/i.test(l) && /(\d{4}|present|current)/i.test(l) && l.length > 12
+  );
+  const n = roleLike.length;
+  return Math.min(Math.max(n || 1, 1), 20);
+}
+
+/** Split/join avoids RegExp replacement rules when `value` contains `$` or `&`. */
+function substituteLiteral(haystack: string, needle: string, value: string): string {
+  return haystack.split(needle).join(value);
+}
+
+function applyPromptPlaceholders(
+  template: string,
+  profileData: string,
+  jobDescWrapped: string,
+  titleForPrompt: string
+): string {
+  const expCount = String(experienceCountFromResumeText(profileData));
+  let out = template;
+  // Longer / more specific tokens first so `${profileData}` does not truncate `${profileData.experience.length}`
+  out = substituteLiteral(out, '${profileData.experience.length}', expCount);
+  out = substituteLiteral(out, '${jobDescription}', jobDescWrapped);
+  out = substituteLiteral(out, '${targetTitle}', titleForPrompt);
+  out = substituteLiteral(out, '${baseResume}', profileData);
+  out = substituteLiteral(out, '${profileData}', profileData);
+  return out;
+}
 
 // Helper to build OpenAI prompt (profileData = resume text from selected profile)
 export function buildPrompt(
   profileData: string,
   jobDescription: string,
-  customPrompt?: string
+  customPrompt?: string,
+  targetTitle?: string
 ) {
   const jobDescWrapped = `{${jobDescription}}`;
-  // If custom prompt is provided, use it with placeholders replaced
+  const titleForPrompt = (targetTitle != null && String(targetTitle).trim() !== ''
+    ? String(targetTitle).trim()
+    : DEFAULT_TARGET_TITLE);
+
   if (customPrompt) {
-    return customPrompt
-      .replace(/\${baseResume}/g, profileData)
-      .replace(/\${profileData}/g, profileData)
-      .replace(/\${jobDescription}/g, jobDescWrapped);
+    return applyPromptPlaceholders(customPrompt, profileData, jobDescWrapped, titleForPrompt);
   }
 
-  // Otherwise, use the default prompt template
-  return DEFAULT_PROMPT_TEMPLATE
-    .replace(/\${profileData}/g, profileData)
-    .replace(/\${jobDescription}/g, jobDescWrapped);
+  return applyPromptPlaceholders(DEFAULT_PROMPT_TEMPLATE, profileData, jobDescWrapped, titleForPrompt);
 }
 

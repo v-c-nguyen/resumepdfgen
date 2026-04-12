@@ -17,6 +17,7 @@ export async function getBaseResumes(): Promise<BaseResumeProfile[]> {
     fullAddress: profile.fullAddress || undefined,
     linkedinUrl: profile.linkedinUrl || undefined,
     jobDescription: profile.jobDescription || undefined,
+    targetTitle: profile.targetTitle || undefined,
     logGenerations: profile.logGenerations ?? false,
   }));
 }
@@ -41,6 +42,7 @@ export async function getBaseResumeByName(name: string | null | undefined): Prom
     fullAddress: profile.fullAddress || undefined,
     linkedinUrl: profile.linkedinUrl || undefined,
     jobDescription: profile.jobDescription || undefined,
+    targetTitle: profile.targetTitle || undefined,
     logGenerations: profile.logGenerations ?? false,
   };
 }

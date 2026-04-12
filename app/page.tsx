@@ -53,7 +53,12 @@ export default function Home() {
   const handleGeneratePromptWithJobDescription = async () => {
     const profileData = selectedProfile?.resumeText?.trim() || '[Paste profile/resume data here]';
     const jobDesc = jobDescriptionForPrompt.trim() || '[Paste job description here]';
-    const promptText = buildPrompt(profileData, jobDesc, selectedProfile?.customPrompt);
+    const promptText = buildPrompt(
+      profileData,
+      jobDesc,
+      selectedProfile?.customPrompt,
+      selectedProfile?.targetTitle
+    );
     try {
       await navigator.clipboard.writeText(promptText);
       setPromptCopied(true);

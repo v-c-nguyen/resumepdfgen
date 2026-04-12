@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 // GET - Fetch all profiles (public endpoint for client-side use)
 export async function GET() {
   try {
@@ -27,6 +29,7 @@ export async function GET() {
         fullAddress: true,
         linkedinUrl: true,
         jobDescription: true,
+        targetTitle: true,
       },
     });
     return NextResponse.json({ profiles });

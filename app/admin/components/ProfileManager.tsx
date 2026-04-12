@@ -25,6 +25,7 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
       fullAddress: '',
       linkedinUrl: '',
       jobDescription: '',
+      targetTitle: '',
       logGenerations: false,
     });
     setIsCreating(true);
@@ -61,6 +62,7 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
             fullAddress: editingProfile.fullAddress || undefined,
             linkedinUrl: editingProfile.linkedinUrl || undefined,
             jobDescription: null,
+            targetTitle: editingProfile.targetTitle?.trim() || undefined,
             logGenerations: editingProfile.logGenerations ?? false,
           }
         : {
@@ -73,6 +75,7 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
             fullAddress: editingProfile.fullAddress || undefined,
             linkedinUrl: editingProfile.linkedinUrl || undefined,
             jobDescription: editingProfile.jobDescription || undefined,
+            targetTitle: editingProfile.targetTitle?.trim() || undefined,
             logGenerations: editingProfile.logGenerations ?? false,
           };
 
@@ -210,6 +213,18 @@ export default function ProfileManager({ profiles, onUpdate }: ProfileManagerPro
               onChange={(e) => setEditingProfile({ ...editingProfile, linkedinUrl: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               placeholder="https://linkedin.com/in/username"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Target title (for prompts)
+            </label>
+            <input
+              type="text"
+              value={editingProfile.targetTitle ?? ''}
+              onChange={(e) => setEditingProfile({ ...editingProfile, targetTitle: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              placeholder="e.g., Senior Software Engineer"
             />
           </div>
 

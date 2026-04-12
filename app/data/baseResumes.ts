@@ -10,6 +10,7 @@ export type BaseResumeProfile = {
   fullAddress?: string;
   linkedinUrl?: string;
   jobDescription?: string;
+  targetTitle?: string;
   logGenerations?: boolean;
 };
 

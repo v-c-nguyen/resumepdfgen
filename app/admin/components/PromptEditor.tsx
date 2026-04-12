@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { buildPrompt, DEFAULT_PROMPT_TEMPLATE } from '@/app/utils/promptBuilder';
+import { DEFAULT_PROMPT_TEMPLATE } from '@/app/utils/promptBuilder';
 import { BaseResumeProfile } from '@/app/data/baseResumes';
 
 interface PromptEditorProps {
@@ -66,7 +66,15 @@ export default function PromptEditor({
           oldName: profile.name,
           name: profile.name,
           resumeText: profile.resumeText,
-          customPrompt: isDefaultPrompt ? undefined : promptToSave
+          customPrompt: isDefaultPrompt ? undefined : promptToSave,
+          pdfTemplate: profile.pdfTemplate ?? 1,
+          email: profile.email,
+          phoneNumber: profile.phoneNumber,
+          fullAddress: profile.fullAddress,
+          linkedinUrl: profile.linkedinUrl,
+          jobDescription: profile.jobDescription ?? null,
+          targetTitle: profile.targetTitle ?? null,
+          logGenerations: profile.logGenerations ?? false,
         }),
       });
 
@@ -130,7 +138,9 @@ export default function PromptEditor({
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
                 <strong>Note:</strong> This is the same prompt used by the &quot;Generate Prompt with Job Description&quot; button on the main page.
-                Use <code className="bg-blue-100 px-1 rounded">{"${profileData}"}</code> for profile/resume data and <code className="bg-blue-100 px-1 rounded">{"${jobDescription}"}</code> for the job description.
+                Use <code className="bg-blue-100 px-1 rounded">{"${profileData}"}</code> for profile/resume data,{' '}
+                <code className="bg-blue-100 px-1 rounded">{"${jobDescription}"}</code> for the job description, and{' '}
+                <code className="bg-blue-100 px-1 rounded">{"${targetTitle}"}</code> for the target title from the profile.
               </p>
             </div>
 
@@ -213,7 +223,15 @@ export default function PromptEditor({
                          oldName: selectedProfileData.name,
                          name: selectedProfileData.name,
                          resumeText: selectedProfileData.resumeText,
-                         customPrompt: undefined
+                         customPrompt: undefined,
+                         pdfTemplate: selectedProfileData.pdfTemplate ?? 1,
+                         email: selectedProfileData.email,
+                         phoneNumber: selectedProfileData.phoneNumber,
+                         fullAddress: selectedProfileData.fullAddress,
+                         linkedinUrl: selectedProfileData.linkedinUrl,
+                         jobDescription: selectedProfileData.jobDescription ?? null,
+                         targetTitle: selectedProfileData.targetTitle ?? null,
+                         logGenerations: selectedProfileData.logGenerations ?? false,
                        }),
                      });
                      if (response.ok) {

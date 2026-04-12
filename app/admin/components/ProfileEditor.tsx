@@ -91,6 +91,7 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
       fullAddress: '',
       linkedinUrl: '',
       jobDescription: '',
+      targetTitle: '',
       logGenerations: false,
     });
     setIsCreating(true);
@@ -131,6 +132,7 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
             fullAddress: editingProfile.fullAddress || undefined,
             linkedinUrl: editingProfile.linkedinUrl || undefined,
             jobDescription: null,
+            targetTitle: editingProfile.targetTitle?.trim() || undefined,
             logGenerations: editingProfile.logGenerations ?? false,
           }
         : {
@@ -144,6 +146,7 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
             fullAddress: editingProfile.fullAddress || undefined,
             linkedinUrl: editingProfile.linkedinUrl || undefined,
             jobDescription: editingProfile.jobDescription || undefined,
+            targetTitle: editingProfile.targetTitle?.trim() || undefined,
             logGenerations: editingProfile.logGenerations ?? false,
           };
 
@@ -319,6 +322,21 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
                   placeholder="https://linkedin.com/in/username"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target title (for prompts)
+                </label>
+                <input
+                  type="text"
+                  value={editingProfile.targetTitle ?? ''}
+                  onChange={(e) => setEditingProfile({ ...editingProfile, targetTitle: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="e.g., Senior Software Engineer"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Substituted for <code className="bg-gray-100 px-1 rounded">{"${targetTitle}"}</code> when generating the prompt. Leave empty to use the default in your prompt template.
+                </p>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -493,8 +511,10 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
             </div>
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Use <code className="bg-blue-100 px-1 rounded">{"${baseResume}"}</code> to reference the base resume
-                and <code className="bg-blue-100 px-1 rounded">{"${jobDescription}"}</code> to reference the job description.
+                <strong>Note:</strong> Use <code className="bg-blue-100 px-1 rounded">{"${baseResume}"}</code> or{' '}
+                <code className="bg-blue-100 px-1 rounded">{"${profileData}"}</code> for resume text,{' '}
+                <code className="bg-blue-100 px-1 rounded">{"${jobDescription}"}</code> for the job description, and{' '}
+                <code className="bg-blue-100 px-1 rounded">{"${targetTitle}"}</code> for the target title from profile settings.
               </p>
             </div>
             <textarea
