@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BaseResumeProfile } from '@/app/data/baseResumes';
 import { DEFAULT_RESUME_TEXT_TEMPLATE } from '@/app/data/defaultResumeTemplate';
+import { PDF_TEMPLATE_IDS } from '@/app/data/pdfTemplateIds';
 import { DEFAULT_PROMPT_TEMPLATE } from '@/app/utils/promptBuilder';
 
 interface ProfileEditorProps {
@@ -33,29 +34,27 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
   useEffect(() => {
     async function fetchTemplates() {
       try {
-        const response = await fetch('/api/admin/templates');
+        const response = await fetch('/api/admin/templates', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
-          if (data.templates && Array.isArray(data.templates)) {
+          if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
             setPdfTemplates(data.templates);
+          } else {
+            setPdfTemplates(
+              PDF_TEMPLATE_IDS.map((value) => ({ value, label: `Template${value}` }))
+            );
           }
         } else {
           console.error('Failed to fetch templates:', response.statusText);
-          // Fallback to default templates if API fails
-          setPdfTemplates([
-            { value: 2, label: 'Template2' },
-            { value: 3, label: 'Template3' },
-            { value: 4, label: 'Template4' },
-          ]);
+          setPdfTemplates(
+            PDF_TEMPLATE_IDS.map((value) => ({ value, label: `Template${value}` }))
+          );
         }
       } catch (err) {
         console.error('Error fetching templates:', err);
-        // Fallback to default templates if API fails
-        setPdfTemplates([
-          { value: 2, label: 'Template2' },
-          { value: 3, label: 'Template3' },
-          { value: 4, label: 'Template4' },
-        ]);
+        setPdfTemplates(
+          PDF_TEMPLATE_IDS.map((value) => ({ value, label: `Template${value}` }))
+        );
       } finally {
         setTemplatesLoading(false);
       }
@@ -166,11 +165,19 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
         setSelectedProfileName(editingProfile.name);
         onUpdate();
         // Refresh template counts after profile update
-        const templatesResponse = await fetch('/api/admin/templates');
+        const templatesResponse = await fetch('/api/admin/templates', { credentials: 'include' });
         if (templatesResponse.ok) {
           const templatesData = await templatesResponse.json();
-          if (templatesData.templates && Array.isArray(templatesData.templates)) {
+          if (
+            templatesData.templates &&
+            Array.isArray(templatesData.templates) &&
+            templatesData.templates.length > 0
+          ) {
             setPdfTemplates(templatesData.templates);
+          } else {
+            setPdfTemplates(
+              PDF_TEMPLATE_IDS.map((value) => ({ value, label: `Template${value}` }))
+            );
           }
         }
       } else {
@@ -199,11 +206,19 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
         }
         onUpdate();
         // Refresh template counts after profile deletion
-        const templatesResponse = await fetch('/api/admin/templates');
+        const templatesResponse = await fetch('/api/admin/templates', { credentials: 'include' });
         if (templatesResponse.ok) {
           const templatesData = await templatesResponse.json();
-          if (templatesData.templates && Array.isArray(templatesData.templates)) {
+          if (
+            templatesData.templates &&
+            Array.isArray(templatesData.templates) &&
+            templatesData.templates.length > 0
+          ) {
             setPdfTemplates(templatesData.templates);
+          } else {
+            setPdfTemplates(
+              PDF_TEMPLATE_IDS.map((value) => ({ value, label: `Template${value}` }))
+            );
           }
         }
       } else {
@@ -408,7 +423,9 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
                     setPreviewLoading(true);
                     setShowPreview(true);
                     try {
-                      const response = await fetch(`/api/admin/templates/preview?template=${template}`);
+                      const response = await fetch(`/api/admin/templates/preview?template=${template}`, {
+                        credentials: 'include',
+                      });
                       if (response.ok) {
                         const blob = await response.blob();
                         const url = URL.createObjectURL(blob);
