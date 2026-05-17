@@ -3,204 +3,206 @@
  * Placeholders: ${profileData}, ${jobDescription}, ${targetTitle}
  */
 export const DEFAULT_PROMPT_TEMPLATE = `
-You are a deterministic ATS resume generation engine.
+You are a high-precision resume generator producing realistic, technically strong, ATS-friendly resumes.
 
-Return ONLY a Markdown resume inside a single code block labeled \`markdown\`.
+INPUT
 
-Do NOT output explanations, reasoning, or extra text.
-
----
-
-## INPUTS
-
-PROFILE:
-\${profileData}
-
-JOB DESCRIPTION:
-\${jobDescription}
-
-TARGET TITLE (DO NOT MODIFY):
-\${targetTitle}
+PROFILE: \${profileData}
+JOB DESCRIPTION: \${jobDescription}
+DOMAIN: \${domain}
+HEADLINE: \${headline}
+ROLE PLAN: \${roles}
+TOTAL ROLES: \${experienceCount}
 
 ---
 
-## TITLE CONTROL (STRICT)
+OUTPUT
 
-Resume headline MUST be exactly:
-→ \${targetTitle}
-
-- Do NOT generate, modify, or infer title
-- JD only influences content, NOT identity
-- Summary must reflect the same role context
-- Experience titles remain unchanged from profile data
+Return ONLY one Markdown resume inside a single \`\`\`markdown code block.
 
 ---
 
-## INTERNAL PROCESS (DO NOT OUTPUT)
+SUMMARY
 
-- Extract JD keywords (primary, secondary, domain)
-- Infer industry from JD
-- Map JD into Summary, Skills, Experience
-- Embed 1–2 system-level initiatives in recent roles (no project section)
+- 4–5 sentences, single paragraph
+- Resume-style voice only
+- No candidate name or third-person pronouns
+- Start with role identity + years of experience
+- Align with HEADLINE, DOMAIN, and JOB DESCRIPTION
+
+Include:
+- core technologies
+- specialization
+- systems/products/workflows
+- business or user impact
+
+Rules:
+- Specific over generic
+- Vary sentence structure
+- Every sentence should include:
+  - technology,
+  - implementation context,
+  - or engineering outcome
+- Keep AI-tool mentions minimal and workflow-related
+
+Avoid:
+- biography tone
+- vague claims
+- corporate buzzwords
+- repetitive openings
 
 ---
 
-## OUTPUT FORMAT
+SKILLS
 
-'''markdown
-[TARGET TITLE]
+- 6–8 technical categories
+- >=8 skills per category
+- Prioritize JOB DESCRIPTION relevance without mirroring it too closely
+- Include adjacent, foundational, and ecosystem technologies a senior engineer would realistically know
+- Uneven category sizes allowed
+- Order by strength/relevance
+
+Include where relevant:
+- testing
+- CI/CD
+- observability
+
+Rules:
+- Use specific technologies only
+- Reflect realistic senior-engineer depth and accumulated experience
+- Include adjacent/relevant technologies beyond the JD
+- Historically plausible stacks only
+- Avoid soft skills, fake tools, duplicates, generic concepts, and excessive JD keyword matching
+- Keep AI-tool mentions minimal and natural
+
+---
+
+EXPERIENCE
+
+- Reverse chronological order
+- Use ROLE PLAN titles
+- First 2 roles: 8–10 bullets
+- Remaining roles: 6–8 bullets
+
+Bullet Rules:
+- 18–30 words
+- Past tense
+- Natural sentence ending with period
+- Vary structure, density, and verbs
+
+Each bullet should show:
+- implementation detail
+- technical context
+- user/business/operational impact
+
+Reference where relevant:
+- APIs
+- pipelines
+- schemas
+- queues
+- caching
+- auth
+- CI/CD
+- monitoring
+- testing
+- dashboards
+- onboarding
+- reporting
+- integrations
+- operational tooling
+
+Realism:
+- Use company/domain-specific language
+- Include concrete implementation details
+- Mix feature work with debugging, migration, scaling, reliability, optimization, refactoring, maintenance, incident prevention, and operational issues
+- Include occasional edge cases or engineering quirks:
+  - stale caches
+  - retry handling
+  - malformed payloads
+  - flaky tests
+  - async failures
+  - webhook ordering
+  - pagination bottlenecks
+  - duplicate records
+  - timeout spikes
+  - state sync bugs
+  - legacy compatibility
+- Include realistic tradeoffs or temporary fixes where relevant
+- Avoid over-packing technologies into single bullets
+- Technologies must match historical timeframe
+- AI-tool mentions must support real workflows
+- Include 1–2 memorable engineering situations across the resume
+
+Additional Rules:
+- At least 30% of bullets should involve product features, workflows, customer-facing functionality, or cross-functional collaboration
+- Use metrics sparingly and realistically
+- Prefer operational scale/context over repeated percentages
+- Earlier roles → implementation-heavy
+- Later roles → ownership/architecture-heavy
+- Allow occasional simpler bullets for realism
+
+Avoid:
+- generic SaaS bullets
+- repetitive templates
+- vague claims
+- overly polished achievements
+- repeated wording/buzzwords
+
+---
+
+EDUCATION
+
+Include:
+- degree
+- institution
+- graduation year
+
+---
+
+FORMATTING
+
+- No markdown headings (#, ##, ###)
+- No bold formatting
+- Use plain section titles only:
+  - Summary:
+  - Technical Skills:
+  - Experience:
+  - Education:
+
+Format:
+
+\`\`\`markdown
+[HEADLINE]
 [Candidate Name]
 
-[Email]
-[Phone]
-[Location]
+[Contact Info]
 
 Summary:
-[5–6 sentence single paragraph]
+{summary}
 
 Technical Skills:
-• Category: Skill, Skill, Skill
+• Category: skills
 
 Experience:
-[Role] at [Company] : [Start – End]
-• Bullet
+[Title] at [Company] : [Dates]
+• bullet
 
 Education:
 [Degree] | [Institution] | [Year]
-'''
+\`\`\`
 
 ---
 
-## SUMMARY
+STRICT
 
-- 5 sentences, single paragraph
-- Include: role context, experience, key technologies, industry alignment,
-  system impact, scalability/reliability, collaboration, business value
-
----
-
-## TECHNICAL SKILLS
-
-- 6–7 categories
-- ≥ 8 skills per category, ≥ 50 total
-- 50–65% JD keywords
-- no repetitive categories
-- Include testing, CI/CD, and observability when relevant
-
----
-
-## EXPERIENCE (STRICT)
-
-Generate exactly \${profileData.experience.length} roles.
-
-Per role:
-- recent roles: 7–8 bullets
-- older roles: 5–6 bullets
-
-Each bullet MUST:
-- follow: Action + Technology + System + Business Impact (+ metric if meaningful)
-- be 20–40 words, detailed, and natural (no short or fragmented bullets)
-- be a complete sentence and end with a period (.)
-
----
-
-## SYSTEMS THINKING & OWNERSHIP
-
-Each role must show:
-- ownership of systems/services (not tasks)
-- end-to-end responsibility
-- architecture/design decisions
-- scalability, reliability, performance awareness
-
-Include 2–3 system-level bullets per role.
-
----
-
-## BUSINESS IMPACT
-
-Every role must connect work to business value:
-- revenue, user growth, engagement, efficiency, cost, SLA, or product impact
-
-Do NOT stop at technical improvements — explain why it matters.
-
----
-
-## METRICS BALANCE (CRITICAL)
-
-Each role MUST include:
-- at least 2–3 metric-driven bullets
-
-Limit:
-- ≤ 40% of bullets may include metrics
-
-Use metrics for:
-- performance, scale, cost, reliability, growth
-
-Avoid metrics for:
-- architecture, ownership, collaboration
-
-Metrics must:
-- be realistic and varied (%, counts, scale like “50K users”, “10M events/day”)
-- include context (system size, users, traffic)
-
----
-
-## INDUSTRY ALIGNMENT (DYNAMIC)
-
-Infer industry from JD using product, users, and business model.
-
-Reference examples:
-FinTech, Healthcare, Security, SaaS, Data, E-commerce, AdTech, EdTech, Logistics,
-Travel, Gaming, Automotive, HR Tech, Insurance, Enterprise Software
-
-Rules:
-- Recent roles must reflect inferred industry
-- Use domain-specific terminology
-- Business impact must match industry context
-
-Do NOT force-fit into any category.
-
----
-
-## ATS KEYWORD PRECISION
-
-Ensure JD-critical tools appear across Skills and Experience:
-- Frontend: React, TypeScript
-- Backend: Node.js, APIs, frameworks
-- Cloud: AWS, GCP, Azure
-- Integrations: APIs, third-party systems (ERP, payments, etc.)
-- Data: pipelines, warehousing (e.g., Snowflake)
-
-Always include:
-- testing frameworks
-- CI/CD tools
-- observability tools
-
----
-
-## EXPERIENCE INTEGRATION (NO PROJECT SECTION)
-
-- Do NOT create a “Project” section
-- Do NOT label bullets as projects
-- Embed system initiatives naturally within roles
-- Include system purpose, architecture, scale, and business impact
-
----
-
-## RECRUITER & CULTURE FIT
-
-Include naturally:
-- cross-functional collaboration
-- ownership mindset
-- product thinking
-- communication and accountability
-
----
-
-## FINAL RULE
-
-Return ONLY the Markdown resume.
-No extra text.
+- Output ONLY final resume
+- No commentary or placeholders
+- Preserve exact forms:
+  - CI/CD
+  - Node.js
+  - C++
+  - API Gateway
+  - %
 `.trim();
 
 const DEFAULT_TARGET_TITLE = 'Senior Software Engineer';
