@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { DEFAULT_PROMPT_TEMPLATE } from '@/app/utils/promptBuilder';
-
-async function ensureDefaultPromptsExist() {
-  const count = await prisma.defaultPrompt.count();
-  if (count > 0) return;
-
-  await prisma.defaultPrompt.create({
-    data: {
-      name: 'Standard',
-      content: DEFAULT_PROMPT_TEMPLATE,
-    },
-  });
-}
+import { createDefaultPrompt, listDefaultPrompts } from '@/lib/defaultPrompts';
 
 function isAuthenticated(req: NextRequest): boolean {
   return !!req.cookies.get('admin_session');
@@ -24,11 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    await ensureDefaultPromptsExist();
-    const defaultPrompts = await prisma.defaultPrompt.findMany({
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, content: true },
-    });
+    const defaultPrompts = await listDefaultPrompts();
     return NextResponse.json({ defaultPrompts });
   } catch (error) {
     return NextResponse.json(
@@ -56,27 +40,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const trimmedName = name.trim();
-    const existing = await prisma.defaultPrompt.findUnique({
-      where: { name: trimmedName },
-    });
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'A default prompt with this name already exists' },
-        { status: 400 }
-      );
+    const result = await createDefaultPrompt(name, content);
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const defaultPrompt = await prisma.defaultPrompt.create({
-      data: {
-        name: trimmedName,
-        content: content,
-      },
-      select: { id: true, name: true, content: true },
-    });
-
-    return NextResponse.json({ success: true, defaultPrompt });
+    return NextResponse.json({ success: true, defaultPrompt: result.defaultPrompt });
   } catch (error) {
     return NextResponse.json(
       {

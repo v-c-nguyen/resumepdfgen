@@ -1,8 +1,9 @@
 'use client';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Copy, Check, Mail, Phone, MapPin, Linkedin, Sparkles, FileDown } from 'lucide-react';
 import { BaseResumeProfile } from './data/baseResumes';
 import { buildPrompt } from './utils/promptBuilder';
+import DefaultPromptPicker, { DefaultPromptOption } from './components/DefaultPromptPicker';
 
 const btnMotion = 'transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]';
 
@@ -14,6 +15,13 @@ export default function Home() {
   const [jobDescriptionForPrompt, setJobDescriptionForPrompt] = useState('');
   const [promptCopied, setPromptCopied] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'phone' | 'address' | 'linkedin' | null>(null);
+  const [selectedPromptId, setSelectedPromptId] = useState('');
+  const [selectedPromptContent, setSelectedPromptContent] = useState<string | undefined>();
+
+  const handlePromptSelect = useCallback((prompt: DefaultPromptOption) => {
+    setSelectedPromptId(prompt.id);
+    setSelectedPromptContent(prompt.content);
+  }, []);
 
   const effectiveProfileName = selectedProfileName || baseResumes[0]?.name;
   const selectedProfile = baseResumes.find((p) => p.name === effectiveProfileName);
@@ -58,7 +66,7 @@ export default function Home() {
       jobDesc,
       selectedProfile?.customPrompt,
       selectedProfile?.targetTitle,
-      selectedProfile?.defaultPromptText
+      selectedPromptContent ?? selectedProfile?.defaultPromptText
     );
     try {
       await navigator.clipboard.writeText(promptText);
@@ -162,10 +170,17 @@ export default function Home() {
               className={`${inputClass} resize-none`}
             />
             <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-1 min-w-[12rem]">
+                <DefaultPromptPicker
+                  selectedId={selectedPromptId}
+                  profileDefaultPromptId={selectedProfile?.defaultPromptId}
+                  onSelect={handlePromptSelect}
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleGeneratePromptWithJobDescription}
-                className={`inline-flex items-center gap-2 text-sm font-medium bg-zinc-200 text-zinc-800 border border-zinc-300 rounded-md py-2 px-4 hover:bg-zinc-300 hover:border-zinc-400 ${btnMotion}`}
+                className={`inline-flex items-center gap-2 shrink-0 text-sm font-medium bg-zinc-200 text-zinc-800 border border-zinc-300 rounded-md py-2 px-4 hover:bg-zinc-300 hover:border-zinc-400 ${btnMotion}`}
               >
                 <Sparkles className="size-4 shrink-0" />
                 Generate prompt
@@ -177,6 +192,11 @@ export default function Home() {
                 </span>
               )}
             </div>
+            {selectedProfile?.customPrompt && (
+              <p className="mt-1.5 text-xs text-zinc-500">
+                This profile uses a custom prompt from admin; the template above applies when no custom prompt is set.
+              </p>
+            )}
           </div>
 
           <div>
