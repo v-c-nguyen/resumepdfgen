@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { BaseResumeProfile } from '@/app/data/baseResumes';
 import { DEFAULT_RESUME_TEXT_TEMPLATE } from '@/app/data/defaultResumeTemplate';
 import { PDF_TEMPLATE_IDS } from '@/app/data/pdfTemplateIds';
-import { DEFAULT_PROMPT_TEMPLATE } from '@/app/utils/promptBuilder';
+import PromptTemplateSelector from './PromptTemplateSelector';
 
 interface ProfileEditorProps {
   profiles: BaseResumeProfile[];
@@ -84,6 +84,7 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
       name: '',
       resumeText: DEFAULT_RESUME_TEXT_TEMPLATE,
       customPrompt: undefined,
+      defaultPromptId: undefined,
       pdfTemplate: pdfTemplates.length > 0 ? pdfTemplates[0].value : 1,
       email: '',
       phoneNumber: '',
@@ -125,6 +126,7 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
             customPrompt: editingProfile.customPrompt || undefined,
+            defaultPromptId: editingProfile.defaultPromptId || undefined,
             pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1),
             email: editingProfile.email || undefined,
             phoneNumber: editingProfile.phoneNumber || undefined,
@@ -139,6 +141,7 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
             name: editingProfile.name,
             resumeText: editingProfile.resumeText,
             customPrompt: editingProfile.customPrompt || undefined,
+            defaultPromptId: editingProfile.defaultPromptId || undefined,
             pdfTemplate: editingProfile.pdfTemplate || (pdfTemplates.length > 0 ? pdfTemplates[0].value : 1),
             email: editingProfile.email || undefined,
             phoneNumber: editingProfile.phoneNumber || undefined,
@@ -234,7 +237,8 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
 
   // If editing, show the edit form
   if (editingProfile) {
-    const currentPrompt = editingProfile.customPrompt || DEFAULT_PROMPT_TEMPLATE;
+    const currentPrompt =
+      editingProfile.customPrompt ?? editingProfile.defaultPromptText ?? '';
 
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
@@ -511,53 +515,22 @@ export default function ProfileEditor({ profiles, onUpdate }: ProfileEditorProps
             )}
           </div>
 
-          {/* Custom Prompt Editor */}
+          {/* Prompt template */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Custom Prompt</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditingProfile({ ...editingProfile, customPrompt: undefined });
-                  }}
-                  className="text-sm text-gray-600 hover:text-gray-800 underline"
-                >
-                  Reset to Default
-                </button>
-              </div>
-            </div>
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Use <code className="bg-blue-100 px-1 rounded">{"${baseResume}"}</code> or{' '}
-                <code className="bg-blue-100 px-1 rounded">{"${profileData}"}</code> for resume text,{' '}
-                <code className="bg-blue-100 px-1 rounded">{"${jobDescription}"}</code> for the job description, and{' '}
-                <code className="bg-blue-100 px-1 rounded">{"${targetTitle}"}</code> for the target title from profile settings.
-              </p>
-            </div>
-            <textarea
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Prompt</h3>
+            <PromptTemplateSelector
               value={currentPrompt}
-              onChange={(e) => {
-                const newPrompt = e.target.value;
-                // If user edits away from default, set as custom
-                if (newPrompt !== DEFAULT_PROMPT_TEMPLATE) {
-                  setEditingProfile({ ...editingProfile, customPrompt: newPrompt });
-                } else {
-                  setEditingProfile({ ...editingProfile, customPrompt: undefined });
-                }
+              customPrompt={editingProfile.customPrompt}
+              defaultPromptId={editingProfile.defaultPromptId}
+              onChange={({ promptText, customPrompt, defaultPromptId }) => {
+                setEditingProfile({
+                  ...editingProfile,
+                  customPrompt,
+                  defaultPromptId,
+                  defaultPromptText: customPrompt ? undefined : promptText,
+                });
               }}
-              rows={20}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-gray-900"
-              placeholder="Enter custom prompt here..."
             />
-            <p className="mt-2 text-xs text-gray-500">
-              {currentPrompt.length} characters
-              {editingProfile.customPrompt && (
-                <span className="ml-2 text-blue-600">• Custom prompt is active</span>
-              )}
-              {!editingProfile.customPrompt && (
-                <span className="ml-2 text-gray-500">• Using default prompt</span>
-              )}
-            </p>
           </div>
 
           <div className="flex gap-4 pt-4">

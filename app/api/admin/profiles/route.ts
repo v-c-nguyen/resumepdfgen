@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { mapProfileToBaseResume, profileIncludeDefaultPrompt } from '@/lib/mapProfile';
 
 // Helper to verify admin session
 function isAuthenticated(req: NextRequest): boolean {
@@ -16,8 +17,11 @@ export async function GET(req: NextRequest) {
   try {
     const profiles = await prisma.profile.findMany({
       orderBy: { name: 'asc' },
+      include: profileIncludeDefaultPrompt,
     });
-    return NextResponse.json({ profiles });
+    return NextResponse.json({
+      profiles: profiles.map(mapProfileToBaseResume),
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to read profiles', details: error instanceof Error ? error.message : 'Unknown error' },
@@ -33,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { name, resumeText, customPrompt, pdfTemplate, email, phoneNumber, fullAddress, linkedinUrl, jobDescription, targetTitle, logGenerations } = await req.json();
+    const { name, resumeText, customPrompt, defaultPromptId, pdfTemplate, email, phoneNumber, fullAddress, linkedinUrl, jobDescription, targetTitle, logGenerations } = await req.json();
     
     if (!name || !resumeText) {
       return NextResponse.json(
@@ -59,6 +63,7 @@ export async function POST(req: NextRequest) {
         name,
         resumeText,
         customPrompt: customPrompt || null,
+        defaultPromptId: defaultPromptId || null,
         pdfTemplate: pdfTemplate ?? 1,
         email: email || null,
         phoneNumber: phoneNumber || null,
@@ -68,9 +73,13 @@ export async function POST(req: NextRequest) {
         targetTitle: targetTitle || null,
         logGenerations: logGenerations === true,
       },
+      include: profileIncludeDefaultPrompt,
     });
 
-    return NextResponse.json({ success: true, profile: newProfile });
+    return NextResponse.json({
+      success: true,
+      profile: mapProfileToBaseResume(newProfile),
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to create profile', details: error instanceof Error ? error.message : 'Unknown error' },
@@ -86,7 +95,7 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const { oldName, name, resumeText, customPrompt, pdfTemplate, email, phoneNumber, fullAddress, linkedinUrl, jobDescription, targetTitle, logGenerations } = await req.json();
+    const { oldName, name, resumeText, customPrompt, defaultPromptId, pdfTemplate, email, phoneNumber, fullAddress, linkedinUrl, jobDescription, targetTitle, logGenerations } = await req.json();
     
     if (!oldName || !name || !resumeText) {
       return NextResponse.json(
@@ -127,6 +136,7 @@ export async function PUT(req: NextRequest) {
         name,
         resumeText,
         customPrompt: customPrompt || null,
+        defaultPromptId: defaultPromptId || null,
         pdfTemplate: pdfTemplate ?? 1,
         email: email || null,
         phoneNumber: phoneNumber || null,
@@ -136,9 +146,13 @@ export async function PUT(req: NextRequest) {
         targetTitle: targetTitle ?? null,
         logGenerations: logGenerations === true,
       },
+      include: profileIncludeDefaultPrompt,
     });
 
-    return NextResponse.json({ success: true, profile: updatedProfile });
+    return NextResponse.json({
+      success: true,
+      profile: mapProfileToBaseResume(updatedProfile),
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to update profile', details: error instanceof Error ? error.message : 'Unknown error' },

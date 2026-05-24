@@ -4,6 +4,8 @@ export type BaseResumeProfile = {
   name: string; // profile display name used as the select value
   resumeText: string; // full plain-text resume template
   customPrompt?: string; // optional custom prompt for this profile
+  defaultPromptId?: string; // selected default prompt when customPrompt is not set
+  defaultPromptText?: string; // resolved default prompt content (read-only, from API)
   pdfTemplate?: number; // PDF template identifier (e.g., 'default', 'modern', 'classic')
   email?: string;
   phoneNumber?: string;

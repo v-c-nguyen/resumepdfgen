@@ -57,7 +57,8 @@ export default function Home() {
       profileData,
       jobDesc,
       selectedProfile?.customPrompt,
-      selectedProfile?.targetTitle
+      selectedProfile?.targetTitle,
+      selectedProfile?.defaultPromptText
     );
     try {
       await navigator.clipboard.writeText(promptText);

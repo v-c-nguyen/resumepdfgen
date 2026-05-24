@@ -10,11 +10,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model DefaultPrompt {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  content   String    @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  profiles  Profile[]
+
+  @@map("default_prompts")
+}
+
 model Profile {
   id           String   @id @default(cuid())
   name         String   @unique
   resumeText   String   @db.Text
   customPrompt String?  @db.Text
+  defaultPromptId String?
+  defaultPrompt   DefaultPrompt? @relation(fields: [defaultPromptId], references: [id], onDelete: SetNull)
   pdfTemplate  Int      @default(1)
   email        String?
   phoneNumber  String?

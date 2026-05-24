@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { mapProfileToBaseResume, profileIncludeDefaultPrompt } from '@/lib/mapProfile';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,20 +20,11 @@ export async function GET() {
 
     const profiles = await prisma.profile.findMany({
       orderBy: { name: 'asc' },
-      select: {
-        name: true,
-        resumeText: true,
-        customPrompt: true,
-        pdfTemplate: true,
-        email: true,
-        phoneNumber: true,
-        fullAddress: true,
-        linkedinUrl: true,
-        jobDescription: true,
-        targetTitle: true,
-      },
+      include: profileIncludeDefaultPrompt,
     });
-    return NextResponse.json({ profiles });
+    return NextResponse.json({
+      profiles: profiles.map(mapProfileToBaseResume),
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isConnectionError = errorMessage.includes('TLS') || 

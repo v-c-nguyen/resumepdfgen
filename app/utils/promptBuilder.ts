@@ -244,7 +244,8 @@ export function buildPrompt(
   profileData: string,
   jobDescription: string,
   customPrompt?: string,
-  targetTitle?: string
+  targetTitle?: string,
+  defaultPromptTemplate?: string
 ) {
   const jobDescWrapped = `{${jobDescription}}`;
   const titleForPrompt = (targetTitle != null && String(targetTitle).trim() !== ''
@@ -255,6 +256,10 @@ export function buildPrompt(
     return applyPromptPlaceholders(customPrompt, profileData, jobDescWrapped, titleForPrompt);
   }
 
-  return applyPromptPlaceholders(DEFAULT_PROMPT_TEMPLATE, profileData, jobDescWrapped, titleForPrompt);
+  const template = defaultPromptTemplate?.trim()
+    ? defaultPromptTemplate
+    : DEFAULT_PROMPT_TEMPLATE;
+
+  return applyPromptPlaceholders(template, profileData, jobDescWrapped, titleForPrompt);
 }
 
