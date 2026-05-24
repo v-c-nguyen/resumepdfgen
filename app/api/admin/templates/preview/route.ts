@@ -69,6 +69,7 @@ async function generatePreviewPdf(template: number): Promise<Uint8Array> {
     email: parsed.email,
     phone: parsed.phone,
     location: parsed.location,
+    linkedin: parsed.linkedin,
     body: parsed.body,
     PAGE_WIDTH: 595,
     PAGE_HEIGHT: 842

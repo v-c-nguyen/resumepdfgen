@@ -14,7 +14,7 @@ import { renderTemplate8 } from './templates/template8';
 import { renderTemplate9 } from './templates/template9';
 
 // Optional contact overrides (e.g. from profile) when resume text doesn't contain them
-type ContactOverrides = { phone?: string; email?: string; location?: string };
+type ContactOverrides = { phone?: string; email?: string; location?: string; linkedin?: string };
 
 // Prisma client type including ResumeGenerationLog (avoids TS error if client was generated before model existed)
 type PrismaWithResumeLog = typeof prisma & {
@@ -53,6 +53,7 @@ async function generateResumePdf(
     email: parsed.email || overrides?.email || '',
     phone: parsed.phone || overrides?.phone || '',
     location: parsed.location || overrides?.location || '',
+    linkedin: parsed.linkedin || overrides?.linkedin || '',
     body: parsed.body,
     PAGE_WIDTH: 595,
     PAGE_HEIGHT: 842
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest) {
     if (profile?.phoneNumber) contactOverrides.phone = sanitizeForPdfText(profile.phoneNumber);
     if (profile?.email) contactOverrides.email = sanitizeForPdfText(profile.email);
     if (profile?.fullAddress) contactOverrides.location = sanitizeForPdfText(profile.fullAddress);
+    if (profile?.linkedinUrl) contactOverrides.linkedin = sanitizeForPdfText(profile.linkedinUrl);
     const pdfBytes = await generateResumePdf(tailoredResume, pdfTemplate, contactOverrides);
 
     // 5. Return PDF as responseconst sanitize = v => v.replace(/[^a-zA-Z0-9_]/g, '_');

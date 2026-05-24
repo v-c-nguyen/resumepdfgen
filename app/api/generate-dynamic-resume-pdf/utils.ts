@@ -1,4 +1,4 @@
-import { PDFDocument, PDFFont, PDFPage, RGB, rgb } from 'pdf-lib';
+import { PDFArray, PDFDocument, PDFFont, PDFName, PDFPage, PDFString, RGB, rgb } from 'pdf-lib';
 
 // Shared interface for template rendering
 export interface TemplateContext {
@@ -11,6 +11,7 @@ export interface TemplateContext {
   email: string;
   phone: string;
   location: string;
+  linkedin: string;
   body: string;
   PAGE_WIDTH: number;
   PAGE_HEIGHT: number;
@@ -53,6 +54,74 @@ function extractPhoneFromLine(line: string): string | null {
 function isValidLinkedIn(text: string): boolean {
   const linkedinRegex = /^(https?:\/\/)?(www\.)?linkedin\.com\/.+/i;
   return linkedinRegex.test(text.trim());
+}
+
+function stripFieldLabel(line: string): string {
+  return line
+    .replace(/^(contact|email|e-mail|phone|tel|mobile|cell|fax|location|address|linkedin)\s*:\s*/i, '')
+    .trim();
+}
+
+function extractEmailFromLine(line: string): string | null {
+  const trimmed = stripFieldLabel(line);
+  if (isValidEmail(trimmed)) return trimmed;
+  const emailMatch = trimmed.match(/[^\s@|]+@[^\s@|]+\.[^\s@|]+/);
+  if (emailMatch && isValidEmail(emailMatch[0])) return emailMatch[0];
+  return null;
+}
+
+function extractLinkedInFromLine(line: string): string | null {
+  const trimmed = stripFieldLabel(line);
+  if (isValidLinkedIn(trimmed)) return trimmed;
+  const match = trimmed.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/\S+/i);
+  return match ? match[0].trim() : null;
+}
+
+type ParsedContactFields = {
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+};
+
+/** Extract contact fields from a line, including pipe-separated "Contact: a | b | c" rows. */
+function applyContactFromLine(line: string, result: ParsedContactFields): void {
+  const withoutContactPrefix = line.replace(/^contact\s*:\s*/i, '').trim();
+  const segments = withoutContactPrefix.includes('|')
+    ? withoutContactPrefix.split('|').map((s) => s.trim())
+    : [withoutContactPrefix];
+
+  for (const segment of segments) {
+    if (!segment) continue;
+
+    if (!result.email) {
+      const email = extractEmailFromLine(segment);
+      if (email) {
+        result.email = email;
+        continue;
+      }
+    }
+
+    if (!result.phone) {
+      const phone = extractPhoneFromLine(segment);
+      if (phone) {
+        result.phone = phone;
+        continue;
+      }
+    }
+
+    if (!result.linkedin) {
+      const linkedin = extractLinkedInFromLine(segment);
+      if (linkedin) {
+        result.linkedin = linkedin;
+        continue;
+      }
+    }
+
+    if (!result.location && isValidLocation(stripFieldLabel(segment))) {
+      result.location = stripFieldLabel(segment);
+    }
+  }
 }
 
 function isValidLocation(text: string): boolean {
@@ -126,45 +195,14 @@ export function parseResume(resumeText: string): {
   for (let idx = 2; idx < Math.min(nonEmptyLines.length, maxFieldsToCheck + 2); idx++) {
     const { line, index } = nonEmptyLines[idx];
     
-    // If we hit a section header, this is where body starts
-    if (line.endsWith(':')) {
+    // Section header (but not "Contact: email | ..." composite rows)
+    if (line.endsWith(':') && !/^contact\s*:/i.test(line) && !line.includes('|')) {
       bodyStart = index;
       break;
     }
-    
-    // Check for clearly identifiable fields (only if not already found)
-    if (!result.email && isValidEmail(line)) {
-      result.email = line;
-      continue;
-    }
-    
-    if (!result.phone) {
-      const extracted = extractPhoneFromLine(line);
-      if (extracted) {
-        result.phone = extracted;
-        continue;
-      }
-      // Composite line (e.g. "Email | City | 415-966-0362"): split by | and check each segment
-      if (line.includes('|')) {
-        for (const segment of line.split('|').map((s) => s.trim())) {
-          if (isValidPhone(segment)) {
-            result.phone = segment;
-            break;
-          }
-        }
-      }
-      if (result.phone) continue;
-    }
-    
-    if (!result.linkedin && isValidLinkedIn(line)) {
-      result.linkedin = line;
-      continue;
-    }
-    
-    if (!result.location && isValidLocation(line)) {
-      result.location = line;
-      continue;
-    }
+
+    applyContactFromLine(line, result);
+    if (result.email && result.phone && result.location && result.linkedin) continue;
     
     // If we hit body content markers, stop
     if (line.startsWith('•') || line.startsWith('·') || line.startsWith('-')) {
@@ -413,4 +451,223 @@ export const COLORS = {
   LIGHT_GRAY: rgb(0.6, 0.6, 0.6),
   DARK_GRAY: rgb(0.3, 0.3, 0.3),
 };
+
+export const LINKEDIN_LABEL = 'LinkedIn';
+export const PDF_LINK_COLOR = rgb(0.05, 0.25, 0.75);
+
+export type LinkedInContactAlign = 'left' | 'center' | 'right';
+
+export function normalizeLinkedInUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function appendUriLinkAnnotation(
+  pdfDoc: PDFDocument,
+  page: PDFPage,
+  rect: [number, number, number, number],
+  url: string
+): void {
+  const linkAnnotation = pdfDoc.context.register(
+    pdfDoc.context.obj({
+      Type: 'Annot',
+      Subtype: 'Link',
+      Rect: rect,
+      Border: [0, 0, 0],
+      A: {
+        Type: 'Action',
+        S: 'URI',
+        URI: PDFString.of(url),
+      },
+    })
+  );
+
+  const existingAnnots = page.node.lookup(PDFName.of('Annots'), PDFArray);
+  if (existingAnnots) {
+    existingAnnots.push(linkAnnotation);
+  } else {
+    page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([linkAnnotation]));
+  }
+}
+
+function linkRectForText(x: number, y: number, width: number, size: number): [number, number, number, number] {
+  const padding = 2;
+  return [x, y - padding, x + width, y + size + padding];
+}
+
+function resolveAlignedX(
+  align: LinkedInContactAlign,
+  textWidth: number,
+  left: number,
+  right: number,
+  pageWidth?: number,
+  blockWidth?: number
+): number {
+  if (align === 'left') return left;
+  if (align === 'right') return right - textWidth;
+  if (blockWidth !== undefined) {
+    const blockStartX = pageWidth !== undefined
+      ? (pageWidth - blockWidth) / 2
+      : left + (right - left - blockWidth) / 2;
+    return blockStartX + (blockWidth - textWidth) / 2;
+  }
+  if (pageWidth !== undefined) return (pageWidth - textWidth) / 2;
+  return left + (right - left - textWidth) / 2;
+}
+
+function measureTextLineWidth(line: string, font: PDFFont, size: number): number {
+  return font.widthOfTextAtSize(line, size);
+}
+
+export interface DrawContactInfoOptions {
+  pdfDoc: PDFDocument;
+  page: PDFPage;
+  font: PDFFont;
+  location?: string;
+  phone?: string;
+  email?: string;
+  linkedinUrl?: string;
+  y: number;
+  size: number;
+  separator: string;
+  align: LinkedInContactAlign;
+  layout?: 'inline' | 'stacked';
+  left?: number;
+  right?: number;
+  pageWidth?: number;
+  maxWidth?: number;
+  textColor?: RGB;
+  linkColor?: RGB;
+  lineGapMultiplier?: number;
+}
+
+function drawClickableLinkedInLabel(
+  pdfDoc: PDFDocument,
+  page: PDFPage,
+  font: PDFFont,
+  x: number,
+  y: number,
+  size: number,
+  linkColor: RGB,
+  href: string
+): void {
+  const labelWidth = font.widthOfTextAtSize(LINKEDIN_LABEL, size);
+  page.drawText(LINKEDIN_LABEL, { x, y, size, font, color: linkColor });
+  appendUriLinkAnnotation(pdfDoc, page, linkRectForText(x, y, labelWidth, size), href);
+}
+
+function drawContactTextLine(
+  page: PDFPage,
+  font: PDFFont,
+  line: string,
+  x: number,
+  y: number,
+  size: number,
+  textColor: RGB,
+  linkColor: RGB,
+  pdfDoc: PDFDocument,
+  linkedinUrl?: string
+): void {
+  const href = linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : '';
+  const linkedinIndex = href ? line.indexOf(LINKEDIN_LABEL) : -1;
+
+  if (linkedinIndex >= 0) {
+    let cursorX = x;
+    const before = line.slice(0, linkedinIndex);
+    const after = line.slice(linkedinIndex + LINKEDIN_LABEL.length);
+    if (before) {
+      page.drawText(before, { x: cursorX, y, size, font, color: textColor });
+      cursorX += font.widthOfTextAtSize(before, size);
+    }
+    drawClickableLinkedInLabel(pdfDoc, page, font, cursorX, y, size, linkColor, href);
+    cursorX += font.widthOfTextAtSize(LINKEDIN_LABEL, size);
+    if (after) {
+      page.drawText(after, { x: cursorX, y, size, font, color: textColor });
+    }
+    return;
+  }
+
+  page.drawText(line, { x, y, size, font, color: textColor });
+}
+
+/**
+ * Draw contact row(s) with location, phone, email, and an inline clickable "LinkedIn" label.
+ * Returns y below the last drawn line.
+ */
+export function drawContactInfo(options: DrawContactInfoOptions): number {
+  const {
+    pdfDoc,
+    page,
+    font,
+    location,
+    phone,
+    email,
+    linkedinUrl,
+    y: startY,
+    size,
+    separator,
+    align,
+    layout = 'inline',
+    left = 0,
+    right = options.pageWidth ?? 595,
+    pageWidth,
+    maxWidth,
+    textColor = COLORS.MEDIUM_GRAY,
+    linkColor = PDF_LINK_COLOR,
+    lineGapMultiplier = 1.3,
+  } = options;
+
+  const parts = [location, phone, email].filter((part): part is string => Boolean(part));
+  const href = linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : '';
+  if (parts.length === 0 && !href) return startY;
+
+  if (layout === 'stacked') {
+    let y = startY;
+    for (const part of parts) {
+      const textWidth = font.widthOfTextAtSize(part, size);
+      const x = resolveAlignedX('right', textWidth, left, right, pageWidth);
+      page.drawText(part, { x, y, size, font, color: textColor });
+      y -= size * lineGapMultiplier;
+    }
+    if (href) {
+      const labelWidth = font.widthOfTextAtSize(LINKEDIN_LABEL, size);
+      const x = resolveAlignedX('right', labelWidth, left, right, pageWidth);
+      drawClickableLinkedInLabel(pdfDoc, page, font, x, y, size, linkColor, href);
+    }
+    return startY;
+  }
+
+  const textOnlyLine = parts.join(separator);
+  const linkedinSuffix = href ? (parts.length > 0 ? separator : '') + LINKEDIN_LABEL : '';
+  const fullLine = textOnlyLine + linkedinSuffix;
+  const wrapWidth = maxWidth ?? right - left;
+  const lines = wrapText(fullLine, font, size, wrapWidth);
+  const lineWidths = lines.map((line) => measureTextLineWidth(line, font, size));
+  const blockWidth = align === 'center' ? Math.max(...lineWidths, 0) : undefined;
+
+  let y = startY;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineWidth = lineWidths[i];
+    const startX = resolveAlignedX(align, lineWidth, left, right, pageWidth, blockWidth);
+    const lineHasLinkedIn = href ? line.includes(LINKEDIN_LABEL) : false;
+    drawContactTextLine(
+      page,
+      font,
+      line,
+      startX,
+      y,
+      size,
+      textColor,
+      linkColor,
+      pdfDoc,
+      lineHasLinkedIn ? linkedinUrl : undefined
+    );
+    y -= size * lineGapMultiplier;
+  }
+
+  return y;
+}
 

@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 8 Body Content Renderer - Classic bordered frame
 function renderBodyContentTemplate8(
@@ -362,7 +362,7 @@ function renderBodyContentTemplate8(
 
 // CLASSIC BORDERED FRAME TEMPLATE - Traditional design with border frame around entire page
 export async function renderTemplate8(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const DARK_GRAY = rgb(0.25, 0.25, 0.25);
@@ -431,22 +431,25 @@ export async function renderTemplate8(context: TemplateContext): Promise<Uint8Ar
   }
   
   // Contact info (centered, classic)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  •  ');
-    const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    for (const line of contactLines) {
-      const textWidth = font.widthOfTextAtSize(line, CONTACT_SIZE);
-      const centerX = (PAGE_WIDTH - textWidth) / 2;
-      page.drawText(line, { 
-        x: centerX, 
-        y, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: MEDIUM_GRAY 
-      });
-      y -= CONTACT_SIZE * 1.3;
-    }
+  if (location || phone || email || linkedin) {
+    y = drawContactInfo({
+      pdfDoc,
+      page,
+      font,
+      location,
+      phone,
+      email,
+      linkedinUrl: linkedin,
+      y,
+      size: CONTACT_SIZE,
+      separator: '  •  ',
+      align: 'center',
+      left,
+      right,
+      pageWidth: PAGE_WIDTH,
+      maxWidth: CONTENT_WIDTH,
+      textColor: MEDIUM_GRAY,
+    });
     y -= 13;
   }
   

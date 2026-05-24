@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 7 Body Content Renderer - Minimalist with geometric shapes
 function renderBodyContentTemplate7(
@@ -293,7 +293,7 @@ function renderBodyContentTemplate7(
 
 // MINIMALIST GEOMETRIC TEMPLATE - Clean design with geometric shapes and minimal elements
 export async function renderTemplate7(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const ORANGE = rgb(0.9, 0.5, 0.2);
@@ -344,21 +344,24 @@ export async function renderTemplate7(context: TemplateContext): Promise<Uint8Ar
   }
   
   // Contact info (minimal, left-aligned)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  •  ');
-    const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    for (const line of contactLines) {
-      page.drawText(line, { 
-        x: left, 
-        y, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: MEDIUM_GRAY 
-      });
-      y -= CONTACT_SIZE * 1.3;
-    }
-  }
+  y = drawContactInfo({
+    pdfDoc,
+    page,
+    font,
+    location,
+    phone,
+    email,
+    linkedinUrl: linkedin,
+    y,
+    size: CONTACT_SIZE,
+    separator: '  •  ',
+    align: 'left',
+    left,
+    right,
+    pageWidth: PAGE_WIDTH,
+    maxWidth: CONTENT_WIDTH,
+    textColor: MEDIUM_GRAY,
+  });
   
   
   // Render body content

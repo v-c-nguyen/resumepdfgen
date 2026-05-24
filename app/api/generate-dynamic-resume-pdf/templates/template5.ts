@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 5 Body Content Renderer - Right-aligned header design
 function renderBodyContentTemplate5(
@@ -275,7 +275,7 @@ function renderBodyContentTemplate5(
 
 // RIGHT-ALIGNED HEADER TEMPLATE - Name and contact right-aligned at top, content flows naturally
 export async function renderTemplate5(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const SAGE = rgb(0.5, 0.6, 0.5);
@@ -331,22 +331,26 @@ export async function renderTemplate5(context: TemplateContext): Promise<Uint8Ar
   }
   
   // Contact info (right-aligned, below name)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  |  ');
-    const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH * 0.7);
-    for (const line of contactLines) {
-      const textWidth = font.widthOfTextAtSize(line, CONTACT_SIZE);
-      const rightX = right - textWidth;
-      page.drawText(line, { 
-        x: MARGIN_LEFT, 
-        y, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: MEDIUM_GRAY 
-      });
-      y -= CONTACT_SIZE * 1.4;
-    }
+  if (location || phone || email || linkedin) {
+    y = drawContactInfo({
+      pdfDoc,
+      page,
+      font,
+      location,
+      phone,
+      email,
+      linkedinUrl: linkedin,
+      y,
+      size: CONTACT_SIZE,
+      separator: '  |  ',
+      align: 'left',
+      left: MARGIN_LEFT,
+      right: PAGE_WIDTH - MARGIN_RIGHT,
+      pageWidth: PAGE_WIDTH,
+      maxWidth: CONTENT_WIDTH,
+      textColor: MEDIUM_GRAY,
+      lineGapMultiplier: 1.4,
+    });
     y -= 12;
   }
   

@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 1 Body Content Renderer - Elegant top accent bar design
 function renderBodyContentTemplate1(
@@ -341,7 +341,7 @@ function renderBodyContentTemplate1(
 
 // ELEGANT TOP ACCENT BAR TEMPLATE - Attractive design with subtle top accent bar and prominent header
 export async function renderTemplate1(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const DEEP_BLUE = rgb(0.2, 0.35, 0.55);
@@ -420,24 +420,25 @@ export async function renderTemplate1(context: TemplateContext): Promise<Uint8Ar
   }
   
   // Contact info (centered in header, below name)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  •  ');
-    const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    let contactY = PAGE_HEIGHT - 90;
-    for (const line of contactLines) {
-      const textWidth = font.widthOfTextAtSize(line, CONTACT_SIZE);
-      const centerX = (PAGE_WIDTH - textWidth) / 2;
-      page.drawText(line, { 
-        x: centerX, 
-        y: contactY, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: MEDIUM_GRAY 
-      });
-      contactY -= CONTACT_SIZE * 1.4;
-    }
-  }
+  drawContactInfo({
+    pdfDoc,
+    page,
+    font,
+    location,
+    phone,
+    email,
+    linkedinUrl: linkedin,
+    y: PAGE_HEIGHT - 90,
+    size: CONTACT_SIZE,
+    separator: '  •  ',
+    align: 'center',
+    left: MARGIN_LEFT,
+    right: PAGE_WIDTH - MARGIN_RIGHT,
+    pageWidth: PAGE_WIDTH,
+    maxWidth: CONTENT_WIDTH,
+    textColor: MEDIUM_GRAY,
+    lineGapMultiplier: 1.4,
+  });
   
   // Start body content below header
   y = PAGE_HEIGHT - HEADER_HEIGHT - 25;

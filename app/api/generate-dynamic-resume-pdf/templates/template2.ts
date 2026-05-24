@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 2 Body Content Renderer - Structured style with top/bottom borders
 function renderBodyContentTemplate2(
@@ -514,7 +514,7 @@ function renderBodyContentTemplate2(
 
 // STRUCTURED TEMPLATE - Top and bottom borders with asymmetric layout
 export async function renderTemplate2(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const BURGUNDY = rgb(0.5, 0.1, 0.2); // Burgundy/wine red accent color
@@ -585,20 +585,25 @@ export async function renderTemplate2(context: TemplateContext): Promise<Uint8Ar
   }
   
   // Contact info positioned on the left side (asymmetric)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  •  ');
-    const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH * 0.6);
-    for (const line of contactLines) {
-      page.drawText(line, { 
-        x: left, 
-        y, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: MEDIUM_GRAY 
-      });
-      y -= CONTACT_SIZE * 1.3;
-    }
+  if (location || phone || email || linkedin) {
+    y = drawContactInfo({
+      pdfDoc,
+      page,
+      font,
+      location,
+      phone,
+      email,
+      linkedinUrl: linkedin,
+      y,
+      size: CONTACT_SIZE,
+      separator: '  •  ',
+      align: 'right',
+      left,
+      right,
+      pageWidth: PAGE_WIDTH,
+      maxWidth: CONTENT_WIDTH * 0.6,
+      textColor: MEDIUM_GRAY,
+    });
     y -= 10;
   }
   

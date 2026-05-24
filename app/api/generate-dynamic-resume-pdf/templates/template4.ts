@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 7 Body Content Renderer - Refined style with corner accents
 function renderBodyContentTemplate4(
@@ -415,7 +415,7 @@ function renderBodyContentTemplate4(
 
 // REFINED CORNER ACCENT TEMPLATE - Elegant design with corner accents and forest green
 export async function renderTemplate4(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const FOREST_GREEN = rgb(0.2, 0.4, 0.3); // Forest green accent color
@@ -490,22 +490,26 @@ export async function renderTemplate4(context: TemplateContext): Promise<Uint8Ar
   }
   
   // Contact info (centered, elegant spacing)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  •  ');
-    const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    for (const line of contactLines) {
-      const textWidth = font.widthOfTextAtSize(line, CONTACT_SIZE);
-      const centerX = (PAGE_WIDTH - textWidth) / 2;
-      page.drawText(line, { 
-        x: centerX, 
-        y, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: MEDIUM_GRAY 
-      });
-      y -= CONTACT_SIZE * 1.4;
-    }
+  if (location || phone || email || linkedin) {
+    y = drawContactInfo({
+      pdfDoc,
+      page,
+      font,
+      location,
+      phone,
+      email,
+      linkedinUrl: linkedin,
+      y,
+      size: CONTACT_SIZE,
+      separator: '  •  ',
+      align: 'center',
+      left,
+      right,
+      pageWidth: PAGE_WIDTH,
+      maxWidth: CONTENT_WIDTH,
+      textColor: MEDIUM_GRAY,
+      lineGapMultiplier: 1.4,
+    });
     y -= 10;
   }
   

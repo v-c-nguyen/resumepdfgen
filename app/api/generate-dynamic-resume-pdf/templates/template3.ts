@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, PDF_BULLET_SIZE_MULTIPLIER, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 6 Body Content Renderer - Modern style with left accent bar
 function renderBodyContentTemplate3(
@@ -339,7 +339,7 @@ function renderBodyContentTemplate3(
 
 // MODERN ACCENT BAR TEMPLATE - Left vertical accent bar with indigo color scheme
 export async function renderTemplate3(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const INDIGO = rgb(0.25, 0.3, 0.6); // Indigo accent color
@@ -414,22 +414,24 @@ export async function renderTemplate3(context: TemplateContext): Promise<Uint8Ar
   }
   
   // Contact info in header (below name)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    const contactLine = contactParts.join('  |  ');
-    const contactLines = wrapText(contactLine, font, CONTACT_SIZE, CONTENT_WIDTH);
-    let contactY = PAGE_HEIGHT - 80;
-    for (const line of contactLines) {
-      page.drawText(line, { 
-        x: left, 
-        y: contactY, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: MEDIUM_GRAY 
-      });
-      contactY -= CONTACT_SIZE * 1.3;
-    }
-  }
+  drawContactInfo({
+    pdfDoc,
+    page,
+    font,
+    location,
+    phone,
+    email,
+    linkedinUrl: linkedin,
+    y: PAGE_HEIGHT - 80,
+    size: CONTACT_SIZE,
+    separator: '  |  ',
+    align: 'left',
+    left,
+    right,
+    pageWidth: PAGE_WIDTH,
+    maxWidth: CONTENT_WIDTH,
+    textColor: MEDIUM_GRAY,
+  });
   
   // Start body content below header
   y = PAGE_HEIGHT - headerHeight - 30;

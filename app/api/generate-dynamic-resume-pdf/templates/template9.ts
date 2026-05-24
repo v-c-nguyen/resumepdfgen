@@ -1,5 +1,5 @@
 import { PDFPage, rgb } from 'pdf-lib';
-import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, wrapSkillsAfterCategory } from '../utils';
+import { TemplateContext, wrapText, wrapTextWithIndent, formatDate, drawTextWithBold, COLORS, PDF_BULLET, wrapSkillsAfterCategory, drawContactInfo } from '../utils';
 
 // Template 9 Body Content Renderer - Modern design with balanced layout
 function renderBodyContentTemplate9(
@@ -274,7 +274,7 @@ function renderBodyContentTemplate9(
 
 // MODERN ELEGANT DESIGN - Name in a prominent header bar with contact info elegantly placed
 export async function renderTemplate9(context: TemplateContext): Promise<Uint8Array> {
-  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, PAGE_WIDTH, PAGE_HEIGHT } = context;
+  const { pdfDoc, page, font, fontBold, headline, name, email, phone, location, linkedin, PAGE_WIDTH, PAGE_HEIGHT } = context;
   const BLACK = COLORS.BLACK;
   const MEDIUM_GRAY = COLORS.MEDIUM_GRAY;
   const SLATE_BLUE = rgb(0.35, 0.45, 0.55);
@@ -345,23 +345,28 @@ export async function renderTemplate9(context: TemplateContext): Promise<Uint8Ar
     }
   }
   
-  // Contact info in header bar (light gray text, right-aligned, vertically stacked)
-  const contactParts = [location, phone, email].filter(Boolean);
-  if (contactParts.length > 0) {
-    let contactY = PAGE_HEIGHT - 40;
-    for (const contactPart of contactParts) {
-      const textWidth = font.widthOfTextAtSize(contactPart, CONTACT_SIZE);
-      const rightX = right - textWidth;
-      page.drawText(contactPart, { 
-        x: rightX, 
-        y: contactY, 
-        size: CONTACT_SIZE, 
-        font, 
-        color: rgb(0.92, 0.92, 0.92) // Light gray
-      });
-      contactY -= CONTACT_SIZE * 1.6; // Stack vertically with spacing
-    }
-  }
+  // Contact info in header bar (centered, inline with clickable LinkedIn)
+  drawContactInfo({
+    pdfDoc,
+    page,
+    font,
+    location,
+    phone,
+    email,
+    linkedinUrl: linkedin,
+    y: PAGE_HEIGHT - 40,
+    size: CONTACT_SIZE,
+    separator: '  •  ',
+    align: 'right',
+    layout: 'stacked',
+    left,
+    right,
+    pageWidth: PAGE_WIDTH,
+    maxWidth: CONTENT_WIDTH * 0.45,
+    textColor: rgb(0.92, 0.92, 0.92),
+    linkColor: rgb(0.75, 0.9, 1),
+    lineGapMultiplier: 1.4,
+  });
   
   // Start body content below header
   let y = PAGE_HEIGHT - HEADER_BAR_HEIGHT - 30;
